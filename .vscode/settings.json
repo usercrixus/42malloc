@@ -1,0 +1,11 @@
+{
+    "files.exclude": {
+        "**/*.o": true
+    },
+    "files.associations": {
+        "mman.h": "c",
+        "malloc.h": "c",
+        "confname.h": "c",
+        "libft.h": "c"
+    }
+}
