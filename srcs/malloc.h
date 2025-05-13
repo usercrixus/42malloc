@@ -32,10 +32,14 @@ typedef struct s_reserved
 	int freeMedium[MEDIUM_ALLOC_COUNT];
 } t_reserved;
 
+extern int g_malloc_show_allocations;
+extern int g_malloc_fail_after;
+extern int g_malloc_alloc_count;
+extern t_reserved g_malloc_reserved_memory;
+
 static void initMalloc() __attribute__((constructor));
 static void destroyMalloc() __attribute__((destructor));
 
 void *ft_malloc(size_t size);
 void ft_free(void *ptr);
 void *ft_realloc(void *ptr, size_t size);
-void printPool();

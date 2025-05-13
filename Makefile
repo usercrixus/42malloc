@@ -3,6 +3,7 @@ MAKEFLAGS += --no-print-directory
 OBJ = \
 	main.o \
 	srcs/malloc.o \
+	srcs/printer.o \
 
 all: main.out
 
@@ -34,3 +35,7 @@ test-crash:
 
 test-verbose:
 	MYMALLOC_SHOW_ALLOCATIONS=1 ./main.out
+
+test:
+	./main.out
+

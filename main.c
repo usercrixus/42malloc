@@ -1,4 +1,5 @@
 #include"srcs/malloc.h"
+#include "srcs/printer.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -29,4 +30,10 @@ int main(int argc, char const *argv[])
 	}
 	ft_printf("\n");
 	printPool();
+	printAllocMemEx(ar1, sizeof(int) * 10);
+	ft_free(ar1);
+	ft_free(s);
+	ft_free(ar2);
+	ft_free(ar3);
+	printAllocMemEx(ar1, sizeof(int) * 10);
 }
