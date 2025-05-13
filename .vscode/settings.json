@@ -6,6 +6,7 @@
         "mman.h": "c",
         "malloc.h": "c",
         "confname.h": "c",
-        "libft.h": "c"
+        "libft.h": "c",
+        "printer.h": "c"
     }
 }

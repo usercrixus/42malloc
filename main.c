@@ -3,37 +3,27 @@
 #include <stdio.h>
 #include <string.h>
 
-int main(int argc, char const *argv[])
+int main()
 {
 	char *model = "Hello world";
-	int *ar1 = ft_malloc(sizeof(int) * 10);
-	char* s = ft_malloc(sizeof(char) * 10);
-	int *ar2 = ft_malloc(sizeof(double) * 100);
-	int *ar3 = ft_malloc(sizeof(double) * 200);
-	for (size_t i = 0; i < 10; i++)
+	int *ar1 = malloc(sizeof(int) * 10);
+	int *ar2 = malloc(sizeof(double) * 100);
+	int *ar3 = malloc(sizeof(double) * 200);
+	char* s = malloc(sizeof(char) * 12);
+	for (int i = 0; i < 10; i++)
 	{
 		ar1[i] = i;
 	}
-	for (size_t i = 0; i < ft_strlen(model); i++)
-	{
-		s[i] = model[i];
-	}
-
-	for (size_t i = 0; i < 10; i++)
-	{
-		ft_printf("%d ", ar1[i]);
-	}
+	strcpy(s, model);
+	ft_printf("%s", s);
 	ft_printf("\n");
-	for (size_t i = 0; i < ft_strlen(model); i++)
-	{
-		ft_printf("%c", s[i]);
-	}
+	s = realloc(s, 200);
+	ft_printf("%s", s);
 	ft_printf("\n");
-	printPool();
-	printAllocMemEx(ar1, sizeof(int) * 10);
-	ft_free(ar1);
-	ft_free(s);
-	ft_free(ar2);
-	ft_free(ar3);
-	printAllocMemEx(ar1, sizeof(int) * 10);
+	show_alloc_mem();
+	printMemoryDump(ar1, sizeof(int) * 10);
+	free(ar1);
+	free(ar2);
+	free(ar3);
+	free(s);
 }

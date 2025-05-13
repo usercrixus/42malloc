@@ -1,36 +1,41 @@
 #include "printer.h"
 
-void printPool()
+void show_alloc_mem(void)
 {
-	int i;
+	void *base;
+	t_malloc *hdr;
 
-	i = 0;
-	ft_printf("====SMALL====\n");
-	while (i < SMALL_ALLOC_COUNT)
+	base = g_malloc_reserved_memory.small;
+	ft_printf("SMALL: %p\n", base);
+	for (int i = 0; i < SMALL_ALLOC_COUNT; i++)
 	{
-		void *block = (char *)g_malloc_reserved_memory.small + (i * SMALL_MALLOC);
-		ft_printf("Memory: %p, size: %d\n", block, ((t_malloc *)block)->size);
-		i++;
+		if (g_malloc_reserved_memory.freeSmall[i] == 0)
+		{
+			hdr = (t_malloc *)((char *)base + i * SMALL_MALLOC);
+			void *user = (char *)hdr + sizeof(t_malloc);
+			ft_printf("%p - %p : %d bytes\n", user, (char *)user + hdr->size, hdr->size);
+		}
 	}
-	ft_printf("====MEDIUM====\n");
-	i = 0;
-	while (i < MEDIUM_ALLOC_COUNT)
+	base = g_malloc_reserved_memory.medium;
+	ft_printf("MEDIUM: %p\n", base);
+	for (int i = 0; i < MEDIUM_ALLOC_COUNT; i++)
 	{
-		void *block = (char *)g_malloc_reserved_memory.medium + (i * MEDIUM_MALLOC);
-		ft_printf("Memory: %p, size: %d\n", block, ((t_malloc *)block)->size);
-		i++;
+		if (g_malloc_reserved_memory.freeMedium[i] == 0)
+		{
+			hdr = (t_malloc *)((char *)base + i * MEDIUM_MALLOC);
+			void *user = (char *)hdr + sizeof(t_malloc);
+			ft_printf("%p - %p : %d bytes\n", user, (char *)user + hdr->size, hdr->size);
+		}
 	}
 }
 
-void printAllocMemEx(void *ptr, size_t size)
+void printMemoryDump(void *ptr, size_t size)
 {
-	int i;
-	int j;
+	size_t i;
 
 	ft_printf("====DUMP====\n");
-	i = 0;
-	j = 0;
 	char *charPtr = (char *)ptr;
+	i = 0;
 	while (i < size)
 	{
 		ft_printf("x%X", charPtr[i]);

@@ -97,7 +97,7 @@ void *formatReturnFromPool(int size, int type)
 	return (char *)block + sizeof(t_malloc);
 }
 
-void *ft_malloc(size_t size)
+void *malloc(size_t size)
 {
 	void *block;
 	void *ptr;
@@ -130,42 +130,45 @@ void defragment(void *ptrStart, size_t size)
     ft_bzero(ptrStart, size);
 }
 
-void ft_free(void *ptr)
+void free(void *ptr)
 {
 	if (!ptr)
 		return;
 	t_malloc *hdr = (t_malloc *)((char *)ptr - sizeof(t_malloc));
 	if (hdr->isFromPool)
 	{
-		defragment(ptr, hdr->size);
+		pthread_mutex_lock(&g_malloc_lock);
 		if (hdr->type == SMALL)
 			g_malloc_reserved_memory.freeSmall[hdr->slot] = 1;
 		else
 			g_malloc_reserved_memory.freeMedium[hdr->slot] = 1;
-	}
-	else
-	{
 		defragment(ptr, hdr->size);
+		pthread_mutex_unlock(&g_malloc_lock);
+		}
+	else
+	{	pthread_mutex_lock(&g_malloc_lock);
 		munmap((void *)hdr, hdr->size + sizeof(t_malloc));
+		defragment(ptr, hdr->size);
+		pthread_mutex_unlock(&g_malloc_lock);
 	}
 }
 
-void *ft_realloc(void *ptr, size_t new_size)
+void *realloc(void *ptr, size_t newSize)
 {
 	if (!ptr)
-		return ft_malloc(new_size);
-	if (new_size == 0)
+		return malloc(newSize);
+	if (newSize == 0)
 	{
-		ft_free(ptr);
+		free(ptr);
 		return NULL;
 	}
 	t_malloc *hdr = (t_malloc *)((char *)ptr - sizeof(t_malloc));
-	size_t old_size = hdr->size;
-	void *new_ptr = ft_malloc(new_size);
+	size_t oldSize = hdr->size;
+	void *new_ptr = malloc(newSize);
 	if (!new_ptr)
 		return NULL;
-	size_t to_copy = old_size < new_size ? old_size : new_size;
-	ft_memcpy(new_ptr, ptr, to_copy);
-	ft_free(ptr);
+	size_t sizeToCpy = oldSize < newSize ? oldSize : newSize;
+	ft_memcpy(new_ptr, ptr, sizeToCpy);
+	free(ptr);
 	return new_ptr;
 }
