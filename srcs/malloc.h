@@ -32,9 +32,6 @@ typedef struct s_reserved
 	int freeMedium[MEDIUM_ALLOC_COUNT];
 } t_reserved;
 
-extern t_reserved g_malloc_reserved;
-extern pthread_mutex_t g_malloc_lock;
-
 static void initMalloc() __attribute__((constructor));
 static void destroyMalloc() __attribute__((destructor));
 

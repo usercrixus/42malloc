@@ -28,3 +28,9 @@ fclean: clean
 re: fclean all
 
 .PHONY: clean fclean submodule re
+
+test-crash:
+	MYMALLOC_SHOW_ALLOCATIONS=1 MYMALLOC_FAIL_AFTER=1 ./main.out
+
+test-verbose:
+	MYMALLOC_SHOW_ALLOCATIONS=1 ./main.out

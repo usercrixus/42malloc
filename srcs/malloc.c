@@ -2,6 +2,10 @@
 
 t_reserved g_malloc_reserved;
 pthread_mutex_t g_malloc_lock;
+int g_show_allocations = 0;
+int g_fail_after = -1;
+int g_alloc_count = 0;
+
 
 static inline size_t page_round_up(size_t sz)
 {
@@ -14,7 +18,14 @@ static inline size_t page_round_up(size_t sz)
 __attribute__((constructor)) static void initMalloc(void)
 {
 	int i;
+	char *env;
 
+	env = getenv("MYMALLOC_SHOW_ALLOCATIONS");
+	if (env && atoi(env) == 1)
+		g_show_allocations = 1;
+	env = getenv("MYMALLOC_FAIL_AFTER");
+	if (env)
+	    g_fail_after = atoi(env);
 	g_malloc_reserved.small = mmap(NULL, page_round_up(SMALL_ALLOC_COUNT * SMALL_MALLOC), PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	if (g_malloc_reserved.small == MAP_FAILED)
 		abort();
@@ -90,6 +101,11 @@ void *ft_malloc(size_t size)
 	void *block;
 	void *ptr;
 
+	if (g_fail_after >= 0 && g_alloc_count >= g_fail_after)
+	    return NULL;
+	g_alloc_count++;
+	if (g_show_allocations)
+	    ft_printf("[malloc] Allocating 0x%x bytes\n", size);
 	if (size == 0)
 		return NULL;
 	size_t totalSize = size + sizeof(t_malloc);
