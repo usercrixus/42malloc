@@ -27,15 +27,20 @@ typedef struct s_malloc
 typedef struct s_reserved
 {
 	void *small;
-	int freeSmall[SMALL_ALLOC_COUNT];
 	void *medium;
-	int freeMedium[MEDIUM_ALLOC_COUNT];
+	size_t smallByteSize;
+	size_t smallSlotSize;
+	size_t mediumBitSize;
+	size_t mediumSlotSize;
+	short *freeSmall;
+	short *freeMedium;
 } t_reserved;
 
-extern int g_malloc_show_allocations;
+extern short g_malloc_show_allocations;
 extern int g_malloc_fail_after;
 extern int g_malloc_alloc_count;
 extern t_reserved g_malloc_reserved_memory;
+extern size_t g_malloc_page_size;
 
 void *malloc(size_t size);
 void free(void *ptr);

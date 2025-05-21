@@ -7,7 +7,7 @@ void show_alloc_mem(void)
 
 	base = g_malloc_reserved_memory.small;
 	ft_printf("SMALL: %p\n", base);
-	for (int i = 0; i < SMALL_ALLOC_COUNT; i++)
+	for (size_t i = 0; i < g_malloc_reserved_memory.smallSlotSize; i++)
 	{
 		if (g_malloc_reserved_memory.freeSmall[i] == 0)
 		{
@@ -18,7 +18,7 @@ void show_alloc_mem(void)
 	}
 	base = g_malloc_reserved_memory.medium;
 	ft_printf("MEDIUM: %p\n", base);
-	for (int i = 0; i < MEDIUM_ALLOC_COUNT; i++)
+	for (size_t i = 0; i < g_malloc_reserved_memory.mediumSlotSize; i++)
 	{
 		if (g_malloc_reserved_memory.freeMedium[i] == 0)
 		{
