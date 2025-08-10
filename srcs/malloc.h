@@ -40,7 +40,6 @@ typedef struct s_reserved
 
 extern short g_malloc_show_allocations;
 extern int g_malloc_fail_after;
-extern _Atomic int g_malloc_alloc_count;
 extern t_reserved g_malloc_reserved_memory;
 extern size_t g_malloc_page_size;
 

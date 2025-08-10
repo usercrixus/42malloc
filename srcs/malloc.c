@@ -4,7 +4,6 @@ t_reserved g_malloc_reserved_memory;
 pthread_mutex_t g_malloc_lock;
 short g_malloc_show_allocations = 0;
 int g_malloc_fail_after = -1;
-_Atomic int g_malloc_alloc_count = 0;
 size_t g_malloc_page_size = 0;
 
 static inline size_t page_round_up(size_t sz)
@@ -105,8 +104,9 @@ void *malloc(size_t size)
 {
 	void *block;
 	void *ptr;
+	static _Atomic int alloc_count;
 
-	if (g_malloc_fail_after >= 0 && g_malloc_alloc_count++ >= g_malloc_fail_after)
+	if (g_malloc_fail_after >= 0 && alloc_count++ >= g_malloc_fail_after)
 		return NULL;
 	if (size > SIZE_MAX - sizeof(t_malloc))
 		return NULL;
