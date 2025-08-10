@@ -32,7 +32,7 @@ typedef struct s_reserved
 	void *medium;
 	size_t smallByteSize;
 	size_t smallSlotSize;
-	size_t mediumBitSize;
+	size_t mediumByteSize;
 	size_t mediumSlotSize;
 	short *freeSmall;
 	short *freeMedium;

@@ -30,9 +30,9 @@ __attribute__((constructor)) static void initMalloc(void)
 	g_malloc_reserved_memory.freeSmall = mmap(NULL, g_malloc_reserved_memory.smallSlotSize * sizeof(short), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	if (g_malloc_reserved_memory.small == MAP_FAILED || g_malloc_reserved_memory.freeSmall == MAP_FAILED)
 		abort();
-	g_malloc_reserved_memory.mediumBitSize = page_round_up(MEDIUM_ALLOC_COUNT * MEDIUM_MALLOC);
-	g_malloc_reserved_memory.mediumSlotSize = g_malloc_reserved_memory.mediumBitSize / MEDIUM_MALLOC;
-	g_malloc_reserved_memory.medium = mmap(NULL, g_malloc_reserved_memory.mediumBitSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	g_malloc_reserved_memory.mediumByteSize = page_round_up(MEDIUM_ALLOC_COUNT * MEDIUM_MALLOC);
+	g_malloc_reserved_memory.mediumSlotSize = g_malloc_reserved_memory.mediumByteSize / MEDIUM_MALLOC;
+	g_malloc_reserved_memory.medium = mmap(NULL, g_malloc_reserved_memory.mediumByteSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	g_malloc_reserved_memory.freeMedium = mmap(NULL, g_malloc_reserved_memory.mediumSlotSize * sizeof(short), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	if (g_malloc_reserved_memory.medium == MAP_FAILED || g_malloc_reserved_memory.freeMedium == MAP_FAILED)
 		abort();
@@ -49,7 +49,7 @@ __attribute__((constructor)) static void initMalloc(void)
 __attribute__((destructor)) static void destroyMalloc()
 {
 	munmap(g_malloc_reserved_memory.small, g_malloc_reserved_memory.smallByteSize);
-	munmap(g_malloc_reserved_memory.medium, g_malloc_reserved_memory.mediumBitSize);
+	munmap(g_malloc_reserved_memory.medium, g_malloc_reserved_memory.mediumByteSize);
 	munmap(g_malloc_reserved_memory.freeSmall, g_malloc_reserved_memory.smallSlotSize * sizeof(short));
 	munmap(g_malloc_reserved_memory.freeMedium, g_malloc_reserved_memory.mediumSlotSize * sizeof(short));
 	pthread_mutex_destroy(&g_malloc_lock);
