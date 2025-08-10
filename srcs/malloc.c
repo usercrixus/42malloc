@@ -106,13 +106,12 @@ void *malloc(size_t size)
 	void *block;
 	void *ptr;
 
-	if (g_malloc_fail_after >= 0 && g_malloc_alloc_count >= g_malloc_fail_after)
+	if (g_malloc_fail_after >= 0 && g_malloc_alloc_count++ >= g_malloc_fail_after)
 		return NULL;
 	if (size > SIZE_MAX - sizeof(t_malloc))
 		return NULL;
 	if (size == 0)
 		return NULL;
-	g_malloc_alloc_count++;
 	if (g_malloc_show_allocations)
 		ft_printf("[malloc] Allocating 0x%x bytes\n", size);
 	size_t totalSize = size + sizeof(t_malloc);
