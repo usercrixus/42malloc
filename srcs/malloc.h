@@ -4,8 +4,10 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/mman.h>
+#include <stdint.h>
 #include <unistd.h>
-#include <pthread.h> 
+#include <pthread.h>
+#include <stdatomic.h>
 #include "42libft/ft_base/libft.h"
 #include "42libft/ft_printf/ft_printf.h"
 
@@ -22,7 +24,7 @@ typedef struct s_malloc
 	int isFromPool;
 	int slot;
 	int type;
-} t_malloc;
+} t_malloc __attribute__((aligned(16)));
 
 typedef struct s_reserved
 {
@@ -38,7 +40,7 @@ typedef struct s_reserved
 
 extern short g_malloc_show_allocations;
 extern int g_malloc_fail_after;
-extern int g_malloc_alloc_count;
+extern _Atomic int g_malloc_alloc_count;
 extern t_reserved g_malloc_reserved_memory;
 extern size_t g_malloc_page_size;
 

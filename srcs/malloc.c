@@ -4,7 +4,7 @@ t_reserved g_malloc_reserved_memory;
 pthread_mutex_t g_malloc_lock;
 short g_malloc_show_allocations = 0;
 int g_malloc_fail_after = -1;
-int g_malloc_alloc_count = 0;
+_Atomic int g_malloc_alloc_count = 0;
 size_t g_malloc_page_size = 0;
 
 static inline size_t page_round_up(size_t sz)
@@ -22,18 +22,18 @@ __attribute__((constructor)) static void initMalloc(void)
 		g_malloc_show_allocations = 1;
 	env = getenv("MYMALLOC_FAIL_AFTER");
 	if (env)
-	    g_malloc_fail_after = atoi(env);
-	g_malloc_page_size  = sysconf(_SC_PAGESIZE);
+		g_malloc_fail_after = atoi(env);
+	g_malloc_page_size = sysconf(_SC_PAGESIZE);
 	g_malloc_reserved_memory.smallByteSize = page_round_up(SMALL_ALLOC_COUNT * SMALL_MALLOC);
 	g_malloc_reserved_memory.smallSlotSize = g_malloc_reserved_memory.smallByteSize / SMALL_MALLOC;
 	g_malloc_reserved_memory.small = mmap(NULL, g_malloc_reserved_memory.smallByteSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-	g_malloc_reserved_memory.freeSmall = mmap(NULL, g_malloc_reserved_memory.smallSlotSize * sizeof(int), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	g_malloc_reserved_memory.freeSmall = mmap(NULL, g_malloc_reserved_memory.smallSlotSize * sizeof(short), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	if (g_malloc_reserved_memory.small == MAP_FAILED || g_malloc_reserved_memory.freeSmall == MAP_FAILED)
 		abort();
 	g_malloc_reserved_memory.mediumBitSize = page_round_up(MEDIUM_ALLOC_COUNT * MEDIUM_MALLOC);
 	g_malloc_reserved_memory.mediumSlotSize = g_malloc_reserved_memory.mediumBitSize / MEDIUM_MALLOC;
 	g_malloc_reserved_memory.medium = mmap(NULL, g_malloc_reserved_memory.mediumBitSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-	g_malloc_reserved_memory.freeMedium = mmap(NULL, g_malloc_reserved_memory.mediumSlotSize * sizeof(int), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	g_malloc_reserved_memory.freeMedium = mmap(NULL, g_malloc_reserved_memory.mediumSlotSize * sizeof(short), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	if (g_malloc_reserved_memory.medium == MAP_FAILED || g_malloc_reserved_memory.freeMedium == MAP_FAILED)
 		abort();
 	i = 0;
@@ -43,20 +43,21 @@ __attribute__((constructor)) static void initMalloc(void)
 	while (i < g_malloc_reserved_memory.mediumSlotSize)
 		g_malloc_reserved_memory.freeMedium[i++] = 1;
 	if (pthread_mutex_init(&g_malloc_lock, NULL) != 0)
-		ft_printf("mutex init has failed\n"); 
+		ft_printf("mutex init has failed\n");
 }
 
 __attribute__((destructor)) static void destroyMalloc()
 {
 	munmap(g_malloc_reserved_memory.small, g_malloc_reserved_memory.smallByteSize);
 	munmap(g_malloc_reserved_memory.medium, g_malloc_reserved_memory.mediumBitSize);
-	munmap(g_malloc_reserved_memory.freeSmall, g_malloc_reserved_memory.smallSlotSize * sizeof(int));
-	munmap(g_malloc_reserved_memory.freeMedium, g_malloc_reserved_memory.mediumSlotSize * sizeof(int));
+	munmap(g_malloc_reserved_memory.freeSmall, g_malloc_reserved_memory.smallSlotSize * sizeof(short));
+	munmap(g_malloc_reserved_memory.freeMedium, g_malloc_reserved_memory.mediumSlotSize * sizeof(short));
+	pthread_mutex_destroy(&g_malloc_lock);
 }
 
-int getFreeSlot(short *slot, int size)
+int getFreeSlot(short *slot, size_t size)
 {
-	int i;
+	size_t i;
 
 	i = 0;
 	pthread_mutex_lock(&g_malloc_lock);
@@ -72,10 +73,10 @@ int getFreeSlot(short *slot, int size)
 	return (pthread_mutex_unlock(&g_malloc_lock), -1);
 }
 
-void *formatReturnFromPool(int size, int type)
+void *formatReturnFromPool(size_t size, int type)
 {
 	int id;
-	int slotsSize;
+	size_t slotsSize;
 	void *memoryPool;
 
 	if (type == SMALL)
@@ -88,7 +89,7 @@ void *formatReturnFromPool(int size, int type)
 	{
 		slotsSize = MEDIUM_MALLOC;
 		memoryPool = g_malloc_reserved_memory.medium;
-		id = getFreeSlot(g_malloc_reserved_memory.freeMedium,  g_malloc_reserved_memory.mediumSlotSize);
+		id = getFreeSlot(g_malloc_reserved_memory.freeMedium, g_malloc_reserved_memory.mediumSlotSize);
 	}
 	if (id == -1)
 		return NULL;
@@ -106,12 +107,14 @@ void *malloc(size_t size)
 	void *ptr;
 
 	if (g_malloc_fail_after >= 0 && g_malloc_alloc_count >= g_malloc_fail_after)
-	    return NULL;
-	g_malloc_alloc_count++;
-	if (g_malloc_show_allocations)
-	    ft_printf("[malloc] Allocating 0x%x bytes\n", size);
+		return NULL;
+	if (size > SIZE_MAX - sizeof(t_malloc))
+		return NULL;
 	if (size == 0)
 		return NULL;
+	g_malloc_alloc_count++;
+	if (g_malloc_show_allocations)
+		ft_printf("[malloc] Allocating 0x%x bytes\n", size);
 	size_t totalSize = size + sizeof(t_malloc);
 	ptr = 0;
 	if (totalSize <= SMALL_MALLOC)
@@ -120,7 +123,7 @@ void *malloc(size_t size)
 		ptr = formatReturnFromPool(size, MEDIUM);
 	if (ptr)
 		return ptr;
-	block = mmap(NULL, page_round_up(totalSize), PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	block = mmap(NULL, page_round_up(totalSize), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	if (block == MAP_FAILED)
 		return NULL;
 	((t_malloc *)block)->size = size;
@@ -130,7 +133,7 @@ void *malloc(size_t size)
 
 void defragment(void *ptrStart, size_t size)
 {
-    ft_bzero(ptrStart, size);
+	ft_bzero(ptrStart, size);
 }
 
 void free(void *ptr)
@@ -141,19 +144,14 @@ void free(void *ptr)
 		if (hdr->isFromPool)
 		{
 			pthread_mutex_lock(&g_malloc_lock);
-			if (hdr->type == SMALL)
-				g_malloc_reserved_memory.freeSmall[hdr->slot] = 1;
-			else
-				g_malloc_reserved_memory.freeMedium[hdr->slot] = 1;
+			(hdr->type == SMALL ? g_malloc_reserved_memory.freeSmall : g_malloc_reserved_memory.freeMedium)[hdr->slot] = 1;
 			defragment(ptr, hdr->size);
 			pthread_mutex_unlock(&g_malloc_lock);
-			}
+		}
 		else
 		{
-			pthread_mutex_lock(&g_malloc_lock);
-			munmap((void *)hdr, page_round_up(hdr->size + sizeof(t_malloc)));
 			defragment(ptr, hdr->size);
-			pthread_mutex_unlock(&g_malloc_lock);
+			munmap((void *)hdr, page_round_up(hdr->size + sizeof(t_malloc)));
 		}
 	}
 }
@@ -163,11 +161,16 @@ void *realloc(void *ptr, size_t newSize)
 	if (!ptr)
 		return malloc(newSize);
 	if (newSize == 0)
-	{
-		free(ptr);
-		return NULL;
-	}
+		return (free(ptr), NULL);
+
 	t_malloc *hdr = (t_malloc *)((char *)ptr - sizeof(t_malloc));
+	if (hdr->isFromPool)
+	{
+		size_t capacity = ((hdr->type == SMALL) ? SMALL_MALLOC : MEDIUM_MALLOC) - sizeof(t_malloc);
+		if (newSize <= capacity)
+			return (hdr->size = newSize, ptr);
+	}
+
 	size_t oldSize = hdr->size;
 	void *new_ptr = malloc(newSize);
 	if (!new_ptr)
