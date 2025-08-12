@@ -1,6 +1,6 @@
 #include "printer.h"
 
-void show_alloc_mem(void)
+void showAllocMem(void)
 {
 	void *base;
 	t_malloc *hdr;
@@ -29,7 +29,7 @@ void show_alloc_mem(void)
 		}
 	}
 	ft_printf("LARGE:\n");
-	t_mmap_entry *cur = g_malloc_reserved_memory.mmap_entries.next; // skip sentinel
+	t_mmap_entry *cur = g_malloc_reserved_memory.mmapLargeEntries.next; // skip sentinel
 	while (cur)
 	{
 		t_malloc *hdr = (t_malloc *)cur->ptr; // base of mapping (header)

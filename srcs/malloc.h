@@ -40,7 +40,7 @@ typedef struct s_reserved
 	size_t mediumSlotSize;
 	short *freeSmall;
 	short *freeMedium;
-	t_mmap_entry mmap_entries;
+	t_mmap_entry mmapLargeEntries;
 } t_reserved;
 
 extern short g_malloc_show_allocations;
