@@ -9,6 +9,9 @@
         "libft.h": "c",
         "printer.h": "c",
         "ft_printf.h": "c",
-        "cstdlib": "c"
+        "cstdlib": "c",
+        "unistd.h": "c",
+        "pthread.h": "c",
+        "stdint.h": "c"
     }
 }

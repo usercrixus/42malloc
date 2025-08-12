@@ -20,10 +20,15 @@
 typedef struct s_malloc
 {
 	size_t size;
-	int isFromPool;
 	int slot;
 	int type;
 } t_malloc __attribute__((aligned(16)));
+
+typedef struct s_mmap_entry
+{
+    void *ptr;
+    struct s_mmap_entry *next;
+} t_mmap_entry;
 
 typedef struct s_reserved
 {
@@ -35,12 +40,14 @@ typedef struct s_reserved
 	size_t mediumSlotSize;
 	short *freeSmall;
 	short *freeMedium;
+	t_mmap_entry mmap_entries;
 } t_reserved;
 
 extern short g_malloc_show_allocations;
 extern int g_malloc_fail_after;
 extern t_reserved g_malloc_reserved_memory;
 extern size_t g_malloc_page_size;
+extern pthread_mutex_t g_malloc_lock;
 
 void *malloc(size_t size);
 void free(void *ptr);
