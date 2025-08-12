@@ -4,8 +4,10 @@ void show_alloc_mem(void)
 {
 	void *base;
 	t_malloc *hdr;
+	size_t total;
 
 	pthread_mutex_lock(&g_malloc_lock);
+	total = 0;
 	base = g_malloc_reserved_memory.small;
 	ft_printf("SMALL: %p\n", base);
 	for (size_t i = 0; i < g_malloc_reserved_memory.small_slot_size; i++)
@@ -13,6 +15,7 @@ void show_alloc_mem(void)
 		if (g_malloc_reserved_memory.free_small[i] == 0)
 		{
 			hdr = (t_malloc *)((char *)base + i * SMALL_MALLOC);
+			total += hdr->size;
 			void *user = (char *)hdr + sizeof(t_malloc);
 			ft_printf("%p - %p : %d bytes\n", user, (char *)user + hdr->size, hdr->size);
 		}
@@ -24,6 +27,7 @@ void show_alloc_mem(void)
 		if (g_malloc_reserved_memory.free_medium[i] == 0)
 		{
 			hdr = (t_malloc *)((char *)base + i * MEDIUM_MALLOC);
+			total += hdr->size;
 			void *user = (char *)hdr + sizeof(t_malloc);
 			ft_printf("%p - %p : %d bytes\n", user, (char *)user + hdr->size, hdr->size);
 		}
@@ -35,11 +39,13 @@ void show_alloc_mem(void)
 		t_malloc *hdr = (t_malloc *)cur->ptr; // base of mapping (header)
 		if (hdr)
 		{
+			total += hdr->size;
 			void *user = (char *)hdr + sizeof(t_malloc);
 			ft_printf("%p - %p : %d bytes\n", user, (char *)user + hdr->size, hdr->size);
 		}
 		cur = cur->next;
 	}
+	ft_printf("TOTAL: %d bytes\n", total);
 	pthread_mutex_unlock(&g_malloc_lock);
 }
 
