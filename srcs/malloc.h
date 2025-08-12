@@ -34,13 +34,13 @@ typedef struct s_reserved
 {
 	void *small;
 	void *medium;
-	size_t smallByteSize;
-	size_t smallSlotSize;
-	size_t mediumByteSize;
-	size_t mediumSlotSize;
-	short *freeSmall;
-	short *freeMedium;
-	t_mmap_entry mmapLargeEntries;
+	size_t small_byte_size;
+	size_t small_slot_size;
+	size_t medium_byte_size;
+	size_t medium_slot_size;
+	short *free_small;
+	short *free_medium;
+	t_mmap_entry mmap_large_entries;
 } t_reserved;
 
 extern short g_malloc_show_allocations;

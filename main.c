@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
-void doFree(void *p)
+void do_free(void *p)
 {
 	free(p);
 }
@@ -27,16 +27,16 @@ int main()
 	s = realloc(s, 200);
 	ft_printf("%s", s);
 	ft_printf("\n");
-	showAllocMem();
-	printMemoryDump(ar1, sizeof(int) * 10);
-	doFree(ar1);
-	doFree(ar2);
-	doFree(ar3);
-	doFree(ar4);
-	doFree(ar5);
-	doFree(s);
+	show_alloc_mem();
+	print_memory_dump(ar1, sizeof(int) * 10);
+	do_free(ar1);
+	do_free(ar2);
+	do_free(ar3);
+	do_free(ar4);
+	do_free(ar5);
+	do_free(s);
 
 	//do_free(ar1);
 	//do_free(ar3);
-	doFree(ar4);
+	do_free(ar4);
 }
