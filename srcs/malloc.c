@@ -57,7 +57,7 @@ __attribute__((destructor)) static void destroyMalloc()
 	pthread_mutex_destroy(&g_malloc_lock);
 }
 
-static int mmap_track_add(void *base)
+static void mmap_track_add(void *base)
 {
 	pthread_mutex_lock(&g_malloc_lock);
 	t_mmap_entry *cur = &g_malloc_reserved_memory.mmap_entries;
@@ -71,7 +71,6 @@ static int mmap_track_add(void *base)
 	node->next = NULL;
 	cur->next = node;
 	pthread_mutex_unlock(&g_malloc_lock);
-	return 1;
 }
 
 static int mmap_track_remove(void *base)

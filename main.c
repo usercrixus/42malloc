@@ -38,5 +38,5 @@ int main()
 
 	//do_free(ar1);
 	//do_free(ar3);
-	do_free(ar4);
+	//do_free(ar4);
 }
