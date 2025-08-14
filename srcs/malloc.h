@@ -26,8 +26,8 @@ typedef struct s_malloc
 
 typedef struct s_mmap_entry
 {
-    void *ptr;
-    struct s_mmap_entry *next;
+	void *ptr;
+	struct s_mmap_entry *next;
 } t_mmap_entry;
 
 typedef struct s_reserved
@@ -43,11 +43,16 @@ typedef struct s_reserved
 	t_mmap_entry mmap_large_entries;
 } t_reserved;
 
-extern short g_malloc_show_allocations;
-extern int g_malloc_fail_after;
-extern t_reserved g_malloc_reserved_memory;
-extern size_t g_malloc_page_size;
-extern pthread_mutex_t g_malloc_lock;
+typedef struct s_global
+{
+	short show_allocations;
+	int fail_after;
+	t_reserved reserved_memory;
+	size_t page_size;
+	pthread_mutex_t lock;
+} t_global;
+
+extern t_global g_malloc;
 
 void *malloc(size_t size);
 void free(void *ptr);

@@ -6,13 +6,13 @@ void show_alloc_mem(void)
 	t_malloc *hdr;
 	size_t total;
 
-	pthread_mutex_lock(&g_malloc_lock);
+	pthread_mutex_lock(&g_malloc.lock);
 	total = 0;
-	base = g_malloc_reserved_memory.small;
+	base = g_malloc.reserved_memory.small;
 	ft_printf("SMALL: %p\n", base);
-	for (size_t i = 0; i < g_malloc_reserved_memory.small_slot_size; i++)
+	for (size_t i = 0; i < g_malloc.reserved_memory.small_slot_size; i++)
 	{
-		if (g_malloc_reserved_memory.free_small[i] == 0)
+		if (g_malloc.reserved_memory.free_small[i] == 0)
 		{
 			hdr = (t_malloc *)((char *)base + i * SMALL_MALLOC);
 			total += hdr->size;
@@ -20,11 +20,11 @@ void show_alloc_mem(void)
 			ft_printf("%p - %p : %d bytes\n", user, (char *)user + hdr->size, hdr->size);
 		}
 	}
-	base = g_malloc_reserved_memory.medium;
+	base = g_malloc.reserved_memory.medium;
 	ft_printf("MEDIUM: %p\n", base);
-	for (size_t i = 0; i < g_malloc_reserved_memory.medium_slot_size; i++)
+	for (size_t i = 0; i < g_malloc.reserved_memory.medium_slot_size; i++)
 	{
-		if (g_malloc_reserved_memory.free_medium[i] == 0)
+		if (g_malloc.reserved_memory.free_medium[i] == 0)
 		{
 			hdr = (t_malloc *)((char *)base + i * MEDIUM_MALLOC);
 			total += hdr->size;
@@ -32,7 +32,7 @@ void show_alloc_mem(void)
 			ft_printf("%p - %p : %d bytes\n", user, (char *)user + hdr->size, hdr->size);
 		}
 	}
-	t_mmap_entry *cur = g_malloc_reserved_memory.mmap_large_entries.next; // skip sentinel
+	t_mmap_entry *cur = g_malloc.reserved_memory.mmap_large_entries.next; // skip sentinel
 	while (cur)
 	{
 		t_malloc *hdr = (t_malloc *)cur->ptr; // base of mapping (header)
@@ -46,7 +46,7 @@ void show_alloc_mem(void)
 		cur = cur->next;
 	}
 	ft_printf("TOTAL: %d bytes\n", total);
-	pthread_mutex_unlock(&g_malloc_lock);
+	pthread_mutex_unlock(&g_malloc.lock);
 }
 
 void print_memory_dump(void *ptr, size_t size)
