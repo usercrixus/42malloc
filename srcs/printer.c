@@ -32,13 +32,13 @@ void show_alloc_mem(void)
 			ft_printf("%p - %p : %d bytes\n", user, (char *)user + hdr->size, hdr->size);
 		}
 	}
-	ft_printf("LARGE:\n");
 	t_mmap_entry *cur = g_malloc_reserved_memory.mmap_large_entries.next; // skip sentinel
 	while (cur)
 	{
 		t_malloc *hdr = (t_malloc *)cur->ptr; // base of mapping (header)
 		if (hdr)
 		{
+			ft_printf("LARGE: %p\n", hdr);
 			total += hdr->size;
 			void *user = (char *)hdr + sizeof(t_malloc);
 			ft_printf("%p - %p : %d bytes\n", user, (char *)user + hdr->size, hdr->size);

@@ -11,7 +11,7 @@ static inline size_t pageRoundUp(size_t sz)
 	return ((sz + g_malloc_page_size - 1) / g_malloc_page_size) * g_malloc_page_size;
 }
 
-static void printPanic(char *str)
+static void print_panic(char *str)
 {
 	ft_printf("%s\n", str);
 	abort();
@@ -34,13 +34,13 @@ __attribute__((constructor)) static void initMalloc(void)
 	g_malloc_reserved_memory.small = mmap(NULL, g_malloc_reserved_memory.small_byte_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	g_malloc_reserved_memory.free_small = mmap(NULL, g_malloc_reserved_memory.small_slot_size * sizeof(short), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	if (g_malloc_reserved_memory.small == MAP_FAILED || g_malloc_reserved_memory.free_small == MAP_FAILED)
-		printPanic("g_malloc_reserved_memory.small == MAP_FAILED || g_malloc_reserved_memory.free_small == MAP_FAILED");
+		print_panic("g_malloc_reserved_memory.small == MAP_FAILED || g_malloc_reserved_memory.free_small == MAP_FAILED");
 	g_malloc_reserved_memory.medium_byte_size = pageRoundUp(MEDIUM_ALLOC_COUNT * MEDIUM_MALLOC);
 	g_malloc_reserved_memory.medium_slot_size = g_malloc_reserved_memory.medium_byte_size / MEDIUM_MALLOC;
 	g_malloc_reserved_memory.medium = mmap(NULL, g_malloc_reserved_memory.medium_byte_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	g_malloc_reserved_memory.free_medium = mmap(NULL, g_malloc_reserved_memory.medium_slot_size * sizeof(short), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	if (g_malloc_reserved_memory.medium == MAP_FAILED || g_malloc_reserved_memory.free_medium == MAP_FAILED)
-		printPanic("g_malloc_reserved_memory.medium == MAP_FAILED || g_malloc_reserved_memory.free_medium == MAP_FAILED");
+		print_panic("g_malloc_reserved_memory.medium == MAP_FAILED || g_malloc_reserved_memory.free_medium == MAP_FAILED");
 	i = 0;
 	while (i < g_malloc_reserved_memory.small_slot_size)
 		g_malloc_reserved_memory.free_small[i++] = 1;
@@ -48,7 +48,7 @@ __attribute__((constructor)) static void initMalloc(void)
 	while (i < g_malloc_reserved_memory.medium_slot_size)
 		g_malloc_reserved_memory.free_medium[i++] = 1;
 	if (pthread_mutex_init(&g_malloc_lock, NULL) != 0)
-		printPanic("pthread_mutex_init(&g_malloc_lock, NULL) != 0");
+		print_panic("pthread_mutex_init(&g_malloc_lock, NULL) != 0");
 	i = 0;
 	g_malloc_reserved_memory.mmap_large_entries.ptr = NULL;
 	g_malloc_reserved_memory.mmap_large_entries.next = NULL;
@@ -72,7 +72,7 @@ static void mmap_large_entries_add(void *base)
 	size_t mlen = pageRoundUp(sizeof(t_mmap_entry));
 	t_mmap_entry *node = mmap(NULL, mlen, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	if (node == MAP_FAILED)
-		printPanic("node == MAP_FAILED");
+		print_panic("node == MAP_FAILED");
 	node->ptr = base;
 	node->next = NULL;
 	cur->next = node;
@@ -89,7 +89,7 @@ static int mmap_large_entries_remove(void *base)
 		{
 			prev->next = cur->next;
 			if (munmap(cur, pageRoundUp(sizeof(t_mmap_entry))) == -1)
-				printPanic("munmap(cur, page_round_up(sizeof(t_mmap_entry))) == -1");
+				print_panic("munmap(cur, page_round_up(sizeof(t_mmap_entry))) == -1");
 			return 1;
 		}
 		prev = cur;
@@ -190,9 +190,17 @@ static int which_pool(const void *user_ptr)
 	const char *mbase = (const char *)g_malloc_reserved_memory.medium;
 	const size_t mbytes = g_malloc_reserved_memory.medium_byte_size;
 	if (hdr >= sbase && hdr < sbase + sbytes)
-		return SMALL;
+	{
+		if (((hdr - sbase) % SMALL_MALLOC) == 0)
+			return SMALL;
+		print_panic("Memory not aligned: (hdr - sbase) \% SMALL_MALLOC");
+	}
 	if (hdr >= mbase && hdr < mbase + mbytes)
-		return MEDIUM;
+	{
+		if (((hdr - mbase) % MEDIUM_MALLOC) == 0)
+			return MEDIUM;
+		print_panic("Memory not aligned: (hdr - mbase) \% MEDIUM_MALLOC");
+	}
 	return -1;
 }
 
@@ -205,7 +213,7 @@ void free(void *ptr)
 		{
 			pthread_mutex_lock(&g_malloc_lock);
 			if ((hdr->type == SMALL ? g_malloc_reserved_memory.free_small : g_malloc_reserved_memory.free_medium)[hdr->slot] == 1)
-				printPanic("(hdr->type == SMALL ? g_malloc_reserved_memory.free_small : g_malloc_reserved_memory.free_medium)[hdr->slot] == 1");
+				print_panic("(hdr->type == SMALL ? g_malloc_reserved_memory.free_small : g_malloc_reserved_memory.free_medium)[hdr->slot] == 1");
 			(hdr->type == SMALL ? g_malloc_reserved_memory.free_small : g_malloc_reserved_memory.free_medium)[hdr->slot] = 1;
 			defragment((char *)hdr, hdr->size + sizeof(t_malloc));
 			pthread_mutex_unlock(&g_malloc_lock);
@@ -214,11 +222,11 @@ void free(void *ptr)
 		{
 			pthread_mutex_lock(&g_malloc_lock);
 			if (!mmap_large_entries_remove(hdr))
-				printPanic("!mmap_large_entries_remove(hdr)");
+				print_panic("!mmap_large_entries_remove(hdr)");
 			size_t map_len = pageRoundUp(hdr->size + sizeof(t_malloc));
 			defragment(hdr, map_len);
 			if (munmap(hdr, map_len) == -1)
-				printPanic("munmap(hdr, map_len) == -1");
+				print_panic("munmap(hdr, map_len) == -1");
 			pthread_mutex_unlock(&g_malloc_lock);
 		}
 	}

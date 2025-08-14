@@ -17,6 +17,8 @@ int main()
 	int *ar4 = malloc(sizeof(double) * 1024); // 8 * 1024 = 8192 too large no pool
 	int *ar5 = malloc(sizeof(double) * 1028); // 8 * 1028 = 8224 too large no pool
 	char *s = malloc(sizeof(char) * 12);	  // 1 * 12 = 12 SMALL_MALLOC (realloc after)
+
+	ft_printf("\n\nBasics test:\n\n");
 	for (int i = 0; i < 10; i++)
 	{
 		ar1[i] = i;
@@ -26,7 +28,8 @@ int main()
 	ft_printf("\n");
 	s = realloc(s, 200); // 200 byte !
 	ft_printf("%s", s);
-	ft_printf("\n");
+	ft_printf("\n\nMandatory test:\n\n");
+
 	show_alloc_mem();
 	// 40+800+1600+8192+8224+200 = 19056
 	print_memory_dump(ar1, sizeof(int) * 10);
@@ -39,5 +42,5 @@ int main()
 
 	// do_free(ar1);
 	// do_free(ar3);
-	do_free(ar4);
+	// do_free(ar4);
 }
