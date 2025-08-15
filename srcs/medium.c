@@ -32,6 +32,13 @@ size_t get_slot_id(const char *ptr)
 		return ((size_t)(ptr - sbase) / SMALL_MALLOC);
 	if (ptr >= mbase && ptr < mbase + mbytes)
 		return ((size_t)(ptr - mbase) / MEDIUM_MALLOC);
+	size_t i = 0;
+	while (i < LARGE_ALLOC_COUNT)
+	{
+		if (g_malloc.reserved_memory.large[i] == (void *)ptr)
+			return (i);
+		i++;
+	}
 	print_panic("get_slot_id");
 	return 0;
 }
@@ -47,19 +54,31 @@ void *format_from_pool(size_t size, int type)
 		slotsSize = SMALL_MALLOC;
 		memoryPool = g_malloc.reserved_memory.small;
 		id = get_free_slot(g_malloc.reserved_memory.free_small, g_malloc.reserved_memory.small_slot_size);
+		if (id == -1)
+			return (NULL);
 		g_malloc.reserved_memory.free_small[id] = size;
 	}
-	else
+	else if (type == MEDIUM)
 	{
 		slotsSize = MEDIUM_MALLOC;
 		memoryPool = g_malloc.reserved_memory.medium;
 		id = get_free_slot(g_malloc.reserved_memory.free_medium, g_malloc.reserved_memory.medium_slot_size);
+		if (id == -1)
+			return (NULL);
 		g_malloc.reserved_memory.free_medium[id] = size;
 	}
-	if (id == -1)
-		return NULL;
-	void *block = (char *)memoryPool + (id * slotsSize);
-	return block;
+	else
+	{
+		size_t mlen = page_round_up(size);
+		void *node = mmap(NULL, mlen, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+		id = get_free_slot(g_malloc.reserved_memory.free_large, g_malloc.reserved_memory.large_slot_size);
+		if (id == -1)
+			return (NULL);
+		g_malloc.reserved_memory.free_large[id] = size;
+		g_malloc.reserved_memory.large[id] = node;
+		return node;
+	}
+	return (char *)memoryPool + (id * slotsSize);
 }
 
 int which_pool(const char *ptr)
@@ -75,13 +94,11 @@ int which_pool(const char *ptr)
 	{
 		if (((size_t)(ptr - sbase) % SMALL_MALLOC) == 0)
 			return SMALL;
-		// print_panic("Memory not aligned: (ptr - sbase) % SMALL_MALLOC != 0");
 	}
 	if (ptr >= mbase && ptr < mbase + mbytes)
 	{
 		if (((size_t)(ptr - mbase) % MEDIUM_MALLOC) == 0)
 			return MEDIUM;
-		// print_panic("Memory not aligned: (ptr - mbase) % MEDIUM_MALLOC != 0");
 	}
 	return LARGE;
 }

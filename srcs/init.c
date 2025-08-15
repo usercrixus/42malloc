@@ -24,36 +24,30 @@ static void init_page_size()
 	g_malloc.page_size = sysconf(_SC_PAGESIZE);
 }
 
-static void init_small()
+static void init_pool(size_t *byte_size, size_t *slot_size, void **pool, size_t **free, size_t ALLOC_COUNT, size_t MALLOC)
 {
-	g_malloc.reserved_memory.small_byte_size = page_round_up(SMALL_ALLOC_COUNT * SMALL_MALLOC);
-	g_malloc.reserved_memory.small_slot_size = g_malloc.reserved_memory.small_byte_size / SMALL_MALLOC;
-	g_malloc.reserved_memory.small = mmap(NULL, g_malloc.reserved_memory.small_byte_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-	g_malloc.reserved_memory.free_small = mmap(NULL, g_malloc.reserved_memory.small_slot_size * sizeof(size_t), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-	if (g_malloc.reserved_memory.small == MAP_FAILED || g_malloc.reserved_memory.free_small == MAP_FAILED)
-		print_panic("g_malloc.reserved_memory.small == MAP_FAILED || g_malloc.reserved_memory.free_small == MAP_FAILED");
+	*byte_size = page_round_up(ALLOC_COUNT * MALLOC);
+	*slot_size = *byte_size / MALLOC;
+	*pool = mmap(NULL, *byte_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	*free = mmap(NULL, *slot_size * sizeof(size_t), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	if (*pool == MAP_FAILED || *free == MAP_FAILED)
+		print_panic("*pool == MAP_FAILED || *free == MAP_FAILED");
 	size_t i = 0;
-	while (i < g_malloc.reserved_memory.small_slot_size)
-		g_malloc.reserved_memory.free_small[i++] = 0;
-}
-
-static void init_medium()
-{
-	g_malloc.reserved_memory.medium_byte_size = page_round_up(MEDIUM_ALLOC_COUNT * MEDIUM_MALLOC);
-	g_malloc.reserved_memory.medium_slot_size = g_malloc.reserved_memory.medium_byte_size / MEDIUM_MALLOC;
-	g_malloc.reserved_memory.medium = mmap(NULL, g_malloc.reserved_memory.medium_byte_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-	g_malloc.reserved_memory.free_medium = mmap(NULL, g_malloc.reserved_memory.medium_slot_size * sizeof(size_t), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-	if (g_malloc.reserved_memory.medium == MAP_FAILED || g_malloc.reserved_memory.free_medium == MAP_FAILED)
-		print_panic("g_malloc.reserved_memory.medium == MAP_FAILED || g_malloc.reserved_memory.free_medium == MAP_FAILED");
-	size_t i = 0;
-	while (i < g_malloc.reserved_memory.medium_slot_size)
-		g_malloc.reserved_memory.free_medium[i++] = 0;
+	while (i < *slot_size)
+		(*free)[i++] = 0;
 }
 
 static void init_large()
 {
-	g_malloc.reserved_memory.mmap_large_entries.ptr = NULL;
-	g_malloc.reserved_memory.mmap_large_entries.next = NULL;
+	g_malloc.reserved_memory.large_byte_size = page_round_up(LARGE_ALLOC_COUNT * LARGE_MALLOC);
+	g_malloc.reserved_memory.large_slot_size = g_malloc.reserved_memory.large_byte_size / LARGE_MALLOC;
+	g_malloc.reserved_memory.large = mmap(NULL, g_malloc.reserved_memory.large_byte_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	g_malloc.reserved_memory.free_large = mmap(NULL, g_malloc.reserved_memory.large_slot_size * sizeof(size_t), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	if (g_malloc.reserved_memory.large == MAP_FAILED || g_malloc.reserved_memory.free_large == MAP_FAILED)
+		print_panic("g_malloc.reserved_memory.large == MAP_FAILED || g_malloc.reserved_memory.free_large == MAP_FAILED");
+	size_t i = 0;
+	while (i < g_malloc.reserved_memory.large_slot_size)
+		g_malloc.reserved_memory.free_large[i++] = 0;
 }
 
 static void init_thread()
@@ -66,8 +60,8 @@ __attribute__((constructor)) static void init_malloc(void)
 {
 	init_debug();
 	init_page_size();
-	init_small();
-	init_medium();
+	init_pool(&(g_malloc.reserved_memory.small_byte_size), &(g_malloc.reserved_memory.small_slot_size), &(g_malloc.reserved_memory.small), &(g_malloc.reserved_memory.free_small), SMALL_ALLOC_COUNT, SMALL_MALLOC);
+	init_pool(&(g_malloc.reserved_memory.medium_byte_size), &(g_malloc.reserved_memory.medium_slot_size), &(g_malloc.reserved_memory.medium), &(g_malloc.reserved_memory.free_medium), MEDIUM_ALLOC_COUNT, MEDIUM_MALLOC);
 	init_large();
 	init_thread();
 }
@@ -86,16 +80,8 @@ static void destroy_medium()
 
 static void destroy_large()
 {
-	t_mmap_entry *prev = &g_malloc.reserved_memory.mmap_large_entries;
-	t_mmap_entry *cur = prev->next;
-	while (cur)
-	{
-		prev->next = cur->next;
-		if (munmap(cur, page_round_up(sizeof(t_mmap_entry))) == -1)
-			print_panic("munmap(cur, page_round_up(sizeof(t_mmap_entry))) == -1");
-		prev = cur;
-		cur = cur->next;
-	}
+	munmap(g_malloc.reserved_memory.large, g_malloc.reserved_memory.large_byte_size);
+	munmap(g_malloc.reserved_memory.free_large, g_malloc.reserved_memory.large_slot_size * sizeof(size_t));
 }
 
 __attribute__((destructor)) static void destroy_malloc()

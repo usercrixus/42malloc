@@ -33,6 +33,7 @@ int main()
 	show_alloc_mem();
 	// 40+800+1600+8192+8224+200 = 19056
 	//print_memory_dump(ar1, sizeof(int) * 10);
+
 	do_free(ar1);
 	do_free(ar2);
 	do_free(ar3);

@@ -10,36 +10,34 @@
 #include "42libft/ft_base/libft.h"
 #include "42libft/ft_printf/ft_printf.h"
 #include "medium.h"
-#include "large.h"
 #include "init.h"
 #include "printer.h"
 
 #define SMALL_MALLOC 1024
 #define MEDIUM_MALLOC 4096
-#define SMALL_ALLOC_COUNT 1024
-#define MEDIUM_ALLOC_COUNT 1024
+#define LARGE_MALLOC sizeof(void *)
+#define SMALL_ALLOC_COUNT 16384
+#define MEDIUM_ALLOC_COUNT 16384
+#define LARGE_ALLOC_COUNT 16384
 #define SMALL 0
 #define MEDIUM 1
 #define LARGE 2
 
-typedef struct s_mmap_entry
-{
-	void *ptr;
-	size_t size;
-	struct s_mmap_entry *next;
-} t_mmap_entry;
 
 typedef struct s_reserved
 {
 	void *small;
 	void *medium;
+	void **large;
 	size_t small_byte_size;
 	size_t small_slot_size;
 	size_t medium_byte_size;
 	size_t medium_slot_size;
+	size_t large_byte_size;
+	size_t large_slot_size;
 	size_t *free_small;
 	size_t *free_medium;
-	t_mmap_entry mmap_large_entries;
+	size_t *free_large;
 } t_reserved;
 
 typedef struct s_global

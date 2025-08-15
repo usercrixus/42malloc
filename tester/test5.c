@@ -1,6 +1,4 @@
 #include <stdlib.h>
-#include "srcs/malloc.h"
-#include "srcs/printer.h"
 
 int main()
 {
