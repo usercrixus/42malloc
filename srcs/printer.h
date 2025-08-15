@@ -6,3 +6,4 @@
 
 void show_alloc_mem();
 void print_memory_dump(void *ptr, size_t size);
+void print_panic(char *str);

@@ -3,6 +3,9 @@ MAKEFLAGS += --no-print-directory
 OBJ_SHARED = \
 	srcs/malloc.o \
 	srcs/printer.o \
+	srcs/init.o \
+	srcs/large.o \
+	srcs/medium.o \
 
 OBJ_MAIN = \
 	main.o \
@@ -25,7 +28,7 @@ libft:
 so: libft_malloc_$(HOSTTYPE).so libft_malloc.so
 
 libft_malloc_$(HOSTTYPE).so: $(OBJ_SHARED) libft
-	gcc -shared srcs/malloc.o srcs/printer.o \
+	gcc -shared $(OBJ_SHARED) \
 		./srcs/42libft/ft_base/libft.a \
 		./srcs/42libft/ft_printf/libftprintf.a \
 		-o libft_malloc_$(HOSTTYPE).so

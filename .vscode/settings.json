@@ -12,6 +12,12 @@
         "cstdlib": "c",
         "unistd.h": "c",
         "pthread.h": "c",
-        "stdint.h": "c"
+        "stdint.h": "c",
+        "array": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "stddef.h": "c",
+        "stdlib.h": "c",
+        "large.h": "c"
     }
 }
