@@ -16,10 +16,8 @@
 
 #define SMALL_MALLOC 1024
 #define MEDIUM_MALLOC 4096
-#define MEDIUM_MALLOC sizeof(void *)
 #define SMALL_ALLOC_COUNT 1024
 #define MEDIUM_ALLOC_COUNT 1024
-#define LARGE_ALLOC_COUNT 1024
 #define SMALL 0
 #define MEDIUM 1
 #define LARGE 2
@@ -35,16 +33,12 @@ typedef struct s_reserved
 {
 	void *small;
 	void *medium;
-	void **large;
 	size_t small_byte_size;
 	size_t small_slot_size;
 	size_t medium_byte_size;
 	size_t medium_slot_size;
-	size_t large_byte_size;
-	size_t large_slot_size;
 	size_t *free_small;
 	size_t *free_medium;
-	size_t *free_large;
 	t_mmap_entry mmap_large_entries;
 } t_reserved;
 
