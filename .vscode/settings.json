@@ -20,6 +20,7 @@
         "stdlib.h": "c",
         "large.h": "c",
         "medium.h": "c",
-        "stdatomic.h": "c"
+        "stdatomic.h": "c",
+        "stdbool.h": "c"
     }
 }
