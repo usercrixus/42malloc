@@ -1,84 +1,98 @@
+#include <stdbool.h>
+#include <stdlib.h>
 #include "printer.h"
 #include "malloc.h"
 
-static int print_pool(t_pool *pool, char *str)
+static size_t print_fixed_pool(const t_pool *pool, const char *label)
 {
-    int total = 0;
-    char *base = (char *)pool->pool;
-    size_t slotsz = pool->byte_size / pool->slot_number;
-    size_t n = pool->slot_number;
-    bool print_header = true;
-    for (size_t i = 0; i < n; i++)
+    size_t total = 0;
+    const char *base = (const char *)pool->pool;
+    if (!base || pool->slot_number == 0) return 0;
+
+    const size_t slot_size = pool->byte_size / pool->slot_number;
+
+    bool printed_header = false;
+    for (size_t i = 0; i < pool->slot_number; i++)
     {
-        size_t used = (pool->free)[i];
+        size_t used = pool->free[i];
         if (used)
         {
-            if (print_header)
+            if (!printed_header)
             {
-                ft_printf("%s: %p\n", str, base);
-                print_header = false;
+                ft_printf("%s: %p\n", label, pool->pool);
+                printed_header = true;
             }
-            void *beg = base + i * slotsz;
-            void *end = (char *)beg + used;
-            ft_printf("%p - %p : %d bytes\n", beg, end, used);
+            const void *beg = base + i * slot_size;
+            const void *end = (const char *)beg + used;
+            ft_printf("%p - %p : %zu bytes\n", beg, end, (size_t)used);
             total += used;
         }
     }
     return total;
-} 
-static int print_large()
+}
+
+static size_t print_large_pool(const t_pool *pool)
 {
-    int total = 0;
-    size_t j = 0;
-    while (j < g_malloc.reserved_memory_size)
+    size_t total = 0;
+    if (!pool->pool || pool->slot_number == 0) return 0;
+
+    bool printed_header = false;
+    void *const *ptr_array = (void *const *)pool->pool;
+
+    for (size_t i = 0; i < pool->slot_number; i++)
     {
-        bool print_header = true;
-        for (size_t i = 0; i < g_malloc.reserved_memory[j].large.slot_number; i++)
+        size_t used = pool->free[i];
+        if (used)
         {
-            size_t used = (g_malloc.reserved_memory[j].large.free)[i];
-            if (used)
+            if (!printed_header)
             {
-                if (print_header)
-                {
-                    ft_printf("LARGE: %p\n", g_malloc.reserved_memory[j].large);
-                    print_header = false;
-                }
-                void *beg = ((void **)(g_malloc.reserved_memory[j].large.pool))[i];
-                void *end = (char *)beg + used;
-                ft_printf("%p - %p : %d bytes\n", beg, end, used);
-                total += used;
+                ft_printf("LARGE: %p\n", pool->pool);
+                printed_header = true;
             }
+            const void *beg = ptr_array[i];
+            const void *end = (const char *)beg + used;
+            ft_printf("%p - %p : %zu bytes\n", beg, end, (size_t)used);
+            total += used;
         }
-        j++;
     }
     return total;
 }
 
+/*
+** Public API
+*/
+
 void show_alloc_mem(void)
 {
     size_t total = 0;
+
     pthread_mutex_lock(&g_malloc.lock);
-    size_t i = 0;
-    while (i < g_malloc.reserved_memory_size)
-        total += print_pool(&(g_malloc.reserved_memory[i++].small), "SMALL");
-    i = 0;
-    while (i < g_malloc.reserved_memory_size)
-        total += print_pool(&(g_malloc.reserved_memory[i++].medium), "MEDIUM");
-    total += print_large();
-    ft_printf("TOTAL: %d bytes\n", total);
+
+    // SMALL
+    for (size_t i = 0; i < g_malloc.pools_size[SMALL]; i++)
+        total += print_fixed_pool(&g_malloc.pools[i][SMALL], "SMALL");
+
+    // MEDIUM
+    for (size_t i = 0; i < g_malloc.pools_size[MEDIUM]; i++)
+        total += print_fixed_pool(&g_malloc.pools[i][MEDIUM], "MEDIUM");
+
+    // LARGE
+    for (size_t i = 0; i < g_malloc.pools_size[LARGE]; i++)
+        total += print_large_pool(&g_malloc.pools[i][LARGE]);
+
+    ft_printf("TOTAL: %zu bytes\n", total);
+
     pthread_mutex_unlock(&g_malloc.lock);
 }
 
 void print_memory_dump(void *ptr, size_t size)
 {
-    size_t i = 0;
-    char *char_ptr = (char *)ptr;
+    const unsigned char *p = (const unsigned char *)ptr;
     ft_printf("====DUMP====\n");
-    while (i < size)
+    for (size_t i = 0; i < size; i++)
     {
-        ft_printf("x%X", char_ptr[i]);
-        i++;
-        if (i % 128 == 0)
+        ft_printf("x%X", p[i]);
+        if ((i + 1) % 128 == 0)
             ft_printf("\n");
     }
     ft_printf("\n");

@@ -19,6 +19,7 @@
         "stddef.h": "c",
         "stdlib.h": "c",
         "large.h": "c",
-        "medium.h": "c"
+        "medium.h": "c",
+        "stdatomic.h": "c"
     }
 }

@@ -4,25 +4,35 @@
 #include "printer.h"
 
 t_global g_malloc;
- 
-void extend_pool()
+
+void extend_pool(void)
 {
+	ft_printf("--------------------- TEST extend_pool -------------------\n");
 	pthread_mutex_lock(&g_malloc.lock);
-	size_t previous_reserved_memory_size = g_malloc.reserved_memory_size;
-	t_reserved *previous_reserved_memory = g_malloc.reserved_memory;
-	t_reserved *new_reserved_memory = init_pool_list(previous_reserved_memory_size * sizeof(t_reserved) * 2);
-	ft_memcpy(new_reserved_memory, previous_reserved_memory, previous_reserved_memory_size * sizeof(t_reserved));
-	g_malloc.reserved_memory = new_reserved_memory;
-	munmap(previous_reserved_memory, previous_reserved_memory_size);
-	size_t i = previous_reserved_memory_size;
-	while (i < g_malloc.reserved_memory_size)
-	{
-		init_pool(&(g_malloc.reserved_memory[i].small), SMALL_ALLOC_COUNT, SMALL_MALLOC);
-		init_pool(&(g_malloc.reserved_memory[i].medium), MEDIUM_ALLOC_COUNT, MEDIUM_MALLOC);
-		init_pool(&(g_malloc.reserved_memory[i].large), LARGE_ALLOC_COUNT, LARGE_MALLOC);
-		i++;
-	}
+
+	size_t old_rows = g_malloc.pool_size;
+	size_t old_bytes = old_rows * sizeof(t_pool[POOL]);
+
+	t_pool(*old_mem)[POOL] = g_malloc.pools;
+	t_pool(*new_mem)[POOL] = init_pool_list(old_bytes * 2);
+
+	ft_memcpy(new_mem, old_mem, old_bytes);
+	g_malloc.pools = new_mem;
+	munmap(old_mem, old_bytes);
+
 	pthread_mutex_unlock(&g_malloc.lock);
+}
+
+void init_single_pool(size_t type)
+{
+	//ft_printf("--------------------- TEST init_single_pool -------------------\n");
+	const size_t *unit_size = UNIT_SIZE;
+	const size_t *unit_number = UNIT_NUMBER;
+	size_t row = g_malloc.pools_size[type];
+	if (row >= g_malloc.pool_size)
+		extend_pool();
+	init_pool(&g_malloc.pools[row][type], unit_number[type], unit_size[type], type);
+	g_malloc.pools_size[type] = row + 1;
 }
 
 static void defragment(void *ptr, size_t size)
@@ -30,24 +40,30 @@ static void defragment(void *ptr, size_t size)
 	ft_bzero(ptr, size);
 }
 
+size_t get_pool_type(size_t size)
+{
+	const size_t *unit_size = UNIT_SIZE;
+	for (size_t i = 0; i < POOL - 1; i++)
+	{
+		if (size <= unit_size[i])
+			return i;
+	}
+	return LARGE;
+}
+
 void *malloc(size_t size)
 {
-	void *ptr;
 	static _Atomic int alloc_count;
 	if (g_malloc.fail_after >= 0 && alloc_count++ >= g_malloc.fail_after)
 		return NULL;
 	if (size == 0)
 		return NULL;
-	ptr = NULL;
-	size_t i = 0; 
-	while (ptr == NULL && i < g_malloc.reserved_memory_size)
+	void *ptr = NULL;
+	size_t type = get_pool_type(size);
+	size_t i = 0;
+	while (ptr == NULL && i < g_malloc.pools_size[type])
 	{
-		if (size <= SMALL_MALLOC)
-			ptr = format_from_pool(size, &(g_malloc.reserved_memory[i].small));
-		else if (size <= MEDIUM_MALLOC)
-			ptr = format_from_pool(size, &(g_malloc.reserved_memory[i].medium));
-		else
-			ptr = format_from_pool(size, &(g_malloc.reserved_memory[i].large));
+		ptr = format_from_pool(size, &g_malloc.pools[i][type]);
 		if (g_malloc.show_allocations && ptr)
 		{
 			pthread_mutex_lock(&g_malloc.lock);
@@ -55,8 +71,10 @@ void *malloc(size_t size)
 			pthread_mutex_unlock(&g_malloc.lock);
 		}
 		i++;
-		if (i == g_malloc.reserved_memory_size && ptr == NULL)
+		if (i == g_malloc.pool_size && ptr == NULL)
 			extend_pool();
+		else if (i == g_malloc.pools_size[type] && ptr == NULL)
+			init_single_pool(type);
 	}
 	return ptr;
 }
@@ -83,7 +101,7 @@ void free(void *ptr)
 		}
 		(pool->free)[id] = 0;
 		defragment(ptr, size);
-		if (pool->is_large)
+		if (pool->type == LARGE)
 			munmap(((void **)(pool->pool))[id], size);
 		pthread_mutex_unlock(&g_malloc.lock);
 	}
