@@ -4,8 +4,13 @@ OBJ_SHARED = \
 	srcs/malloc.o \
 	srcs/printer.o \
 	srcs/init.o \
-	srcs/large.o \
 	srcs/medium.o \
+
+HDR_SHARED = \
+	srcs/malloc.h \
+	srcs/printer.h \
+	srcs/init.h \
+	srcs/medium.h \
 
 OBJ_MAIN = \
 	main.o \
@@ -42,7 +47,7 @@ main1.out: libft $(OBJ_MAIN)
 main2.out: libft $(OBJ_MAIN2)
 	gcc -Wall -Werror -Wextra $(OBJ_MAIN2) -L. -lft_malloc -o $@
 
-%.o: %.c
+%.o: %.c $(HDR_SHARED)
 	gcc -Wall -Werror -Wextra -fpic -c $< -o $@
 
 test-crash:

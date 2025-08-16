@@ -29,14 +29,25 @@ void init_pool(t_pool *pool, size_t ALLOC_COUNT, size_t MALLOC)
 {
 	pool->byte_size = page_round_up(ALLOC_COUNT * MALLOC);
 	pool->slot_number = pool->byte_size / MALLOC; // MALLOC = pool->byte_size / pool->slot_number;
-	pool->remaining = pool->slot_number;
 	pool->pool = mmap(NULL, pool->byte_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	pool->free = mmap(NULL, pool->slot_number * sizeof(size_t), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	pool->is_large = MALLOC == LARGE_MALLOC;
 	if (pool->pool == MAP_FAILED || pool->free == MAP_FAILED)
 		print_panic("*pool == MAP_FAILED || *free == MAP_FAILED");
 	size_t i = 0;
 	while (i < pool->slot_number)
 		(pool->free)[i++] = 0;
+}
+
+t_reserved *init_pool_list(size_t size)
+{
+	t_reserved *reserved_memory;
+	size_t byte_size = page_round_up(size);
+	reserved_memory = mmap(NULL, byte_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	if (reserved_memory == MAP_FAILED)
+		print_panic("g_malloc.reserved_memory == MAP_FAILED");
+	g_malloc.reserved_memory_size = byte_size / sizeof(t_reserved);
+	return reserved_memory;
 }
 
 static void init_thread()
@@ -49,9 +60,15 @@ __attribute__((constructor)) static void init_malloc(void)
 {
 	init_debug();
 	init_page_size();
-	init_pool(&(g_malloc.reserved_memory.small), SMALL_ALLOC_COUNT, SMALL_MALLOC);
-	init_pool(&(g_malloc.reserved_memory.medium), MEDIUM_ALLOC_COUNT, MEDIUM_MALLOC);
-	init_pool(&(g_malloc.reserved_memory.large), LARGE_ALLOC_COUNT, LARGE_MALLOC);
+	g_malloc.reserved_memory = init_pool_list(1);
+	size_t i = 0;
+	while (i < g_malloc.reserved_memory_size)
+	{
+		init_pool(&(g_malloc.reserved_memory[i].small), SMALL_ALLOC_COUNT, SMALL_MALLOC);
+		init_pool(&(g_malloc.reserved_memory[i].medium), MEDIUM_ALLOC_COUNT, MEDIUM_MALLOC);
+		init_pool(&(g_malloc.reserved_memory[i].large), LARGE_ALLOC_COUNT, LARGE_MALLOC);
+		i++;
+	}
 	init_thread();
 }
 
@@ -61,10 +78,21 @@ void destroy_pool(t_pool *pool)
 	munmap(pool->free, pool->slot_number * sizeof(size_t));
 }
 
+void destroy_pool_list()
+{
+	munmap(g_malloc.reserved_memory, g_malloc.reserved_memory_size * sizeof(t_reserved));
+}
+
 __attribute__((destructor)) static void destroy_malloc()
 {
-	destroy_pool(&(g_malloc.reserved_memory.large));
-	destroy_pool(&(g_malloc.reserved_memory.medium));
-	destroy_pool(&(g_malloc.reserved_memory.small));
+	size_t i = 0;
+	while (i < g_malloc.reserved_memory_size)
+	{
+		destroy_pool(&(g_malloc.reserved_memory[i].large));
+		destroy_pool(&(g_malloc.reserved_memory[i].medium));
+		destroy_pool(&(g_malloc.reserved_memory[i].small));
+		i++;
+	}
+	destroy_pool_list();
 	pthread_mutex_destroy(&g_malloc.lock);
 }

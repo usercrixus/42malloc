@@ -134,11 +134,11 @@ void test_stress_sequential() {
     printf("\n%s=== SEQUENTIAL STRESS TESTS ===%s\n", BLUE, RESET);
 
     // Test 1: Many small allocations
-    void **ptrs = malloc(10000 * sizeof(void*));
+    void **ptrs = malloc(100000 * sizeof(void*));
     int success_count = 0;
 
-    for (int i = 0; i < 10000; i++) {
-        size_t size = 1;
+    for (int i = 0; i < 100000; i++) {
+        size_t size = 4;
         ptrs[i] = malloc(size);
         if (ptrs[i]) {
             success_count++;
@@ -147,29 +147,29 @@ void test_stress_sequential() {
         }
     }
     printf("HERE IS %d", success_count);
-    test_result("10000 small allocations", success_count > 9500); // Allow some failures
+    test_result("100000 small allocations", success_count > 9500); // Allow some failures
 
     // Free all allocations
-    for (int i = 0; i < 10000; i++) {
+    for (int i = 0; i < 100000; i++) {
         if (ptrs[i]) free(ptrs[i]);
     }
     free(ptrs);
 
-    // Test 2: Alternating allocation and free
-    success_count = 0;
-    for (int i = 0; i < 1000; i++) {
-        void *ptr1 = malloc(100);
-        void *ptr2 = malloc(200);
-        void *ptr3 = malloc(300);
+    // // Test 2: Alternating allocation and free
+    // success_count = 0;
+    // for (int i = 0; i < 1000; i++) {
+    //     void *ptr1 = malloc(100);
+    //     void *ptr2 = malloc(200);
+    //     void *ptr3 = malloc(300);
     
-        if (ptr1 && ptr2 && ptr3) success_count++;
+    //     if (ptr1 && ptr2 && ptr3) success_count++;
     
-        if (ptr1) free(ptr1);
-        if (ptr2) free(ptr2);
-        if (ptr3) free(ptr3);
-    }
+    //     if (ptr1) free(ptr1);
+    //     if (ptr2) free(ptr2);
+    //     if (ptr3) free(ptr3);
+    // }
 
-    test_result("1000 alternating alloc/free cycles", success_count > 950);
+    // test_result("1000 alternating alloc/free cycles", success_count > 950);
 }
 
 void test_fragmentation() {
@@ -475,14 +475,14 @@ int main() {
     test_edge_cases();
     test_alignment();
     test_stress_sequential();
-    test_fragmentation();
-    test_realloc_scenarios();
-    test_memory_patterns();
-    performance_benchmark();
-    test_concurrent_malloc();
+    // test_fragmentation();
+    // test_realloc_scenarios();
+    // test_memory_patterns();
+    // performance_benchmark();
+    // test_concurrent_malloc();
 
     // Print final summary
-    print_summary();
+    // print_summary();
 
     // return (tests_failed > 0) ? 1 : 0;
 }

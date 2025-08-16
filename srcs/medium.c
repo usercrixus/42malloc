@@ -1,7 +1,7 @@
 #include "medium.h"
 #include "init.h"
 #include "printer.h"
-
+ 
 static int get_free_slot(t_pool *pool)
 {
 	size_t i;
@@ -26,7 +26,7 @@ size_t get_slot_id(const char *ptr, t_pool *pool)
 {
 	if (!ptr)
 		print_panic("get_slot_id");
-	if (pool->pool == g_malloc.reserved_memory.large.pool)
+	if (pool->is_large)
 	{
 		size_t i = 0;
 		while (i < LARGE_ALLOC_COUNT)
@@ -52,7 +52,7 @@ void *format_from_pool(size_t size, t_pool *pool)
 	size_t slotsSize;
 	void *memoryPool;
 
-	if (pool->pool == g_malloc.reserved_memory.large.pool)
+	if (pool->is_large)
 	{
 		size_t mlen = page_round_up(size);
 		void *node = mmap(NULL, mlen, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -80,20 +80,27 @@ t_pool *which_pool(const char *ptr)
 {
 	if (!ptr)
 		print_panic("which pool");
-	const char *sbase = (const char *)g_malloc.reserved_memory.small.pool;
-	const size_t sbytes = g_malloc.reserved_memory.small.byte_size;
-	const char *mbase = (const char *)g_malloc.reserved_memory.medium.pool;
-	const size_t mbytes = g_malloc.reserved_memory.medium.byte_size;
+	size_t i = 0;
+	while (i < g_malloc.reserved_memory_size)
+	{ 
+		const char *sbase = (const char *)g_malloc.reserved_memory[i].small.pool;
+		const size_t sbytes = g_malloc.reserved_memory[i].small.byte_size;
+		const char *mbase = (const char *)g_malloc.reserved_memory[i].medium.pool;
+		const size_t mbytes = g_malloc.reserved_memory[i].medium.byte_size;
 
-	if (ptr >= sbase && ptr < sbase + sbytes)
-	{
-		if (((size_t)(ptr - sbase) % SMALL_MALLOC) == 0)
-			return &(g_malloc.reserved_memory.small);
+		if (ptr >= sbase && ptr < sbase + sbytes)
+		{
+			if (((size_t)(ptr - sbase) % SMALL_MALLOC) == 0)
+				return &(g_malloc.reserved_memory[i].small);
+		}
+		if (ptr >= mbase && ptr < mbase + mbytes)
+		{
+			if (((size_t)(ptr - mbase) % MEDIUM_MALLOC) == 0)
+				return &(g_malloc.reserved_memory[i].medium);
+		}
+		if (get_slot_id(ptr, g_malloc.reserved_memory[i].large.pool) != SIZE_MAX)
+			return &(g_malloc.reserved_memory[i].large);
+		i++;
 	}
-	if (ptr >= mbase && ptr < mbase + mbytes)
-	{
-		if (((size_t)(ptr - mbase) % MEDIUM_MALLOC) == 0)
-			return &(g_malloc.reserved_memory.medium);
-	}
-	return &(g_malloc.reserved_memory.large);
+	return (NULL);
 }

@@ -1,18 +1,23 @@
 #include "printer.h"
 #include "malloc.h"
 
-static int print_pool(t_pool *pool)
+static int print_pool(t_pool *pool, char *str)
 {
     int total = 0;
     char *base = (char *)pool->pool;
     size_t slotsz = pool->byte_size / pool->slot_number;
     size_t n = pool->slot_number;
-    ft_printf("SMALL: %p\n", base);
+    bool print_header = true;
     for (size_t i = 0; i < n; i++)
     {
         size_t used = (pool->free)[i];
         if (used)
         {
+            if (print_header)
+            {
+                ft_printf("%s: %p\n", str, base);
+                print_header = false;
+            }
             void *beg = base + i * slotsz;
             void *end = (char *)beg + used;
             ft_printf("%p - %p : %d bytes\n", beg, end, used);
@@ -20,21 +25,31 @@ static int print_pool(t_pool *pool)
         }
     }
     return total;
-}
+} 
 static int print_large()
 {
     int total = 0;
-    ft_printf("LARGE: %p\n", g_malloc.reserved_memory.large);
-    for (size_t i = 0; i < g_malloc.reserved_memory.large.slot_number; i++)
+    size_t j = 0;
+    while (j < g_malloc.reserved_memory_size)
     {
-        size_t used = (g_malloc.reserved_memory.large.free)[i];
-        if (used)
+        bool print_header = true;
+        for (size_t i = 0; i < g_malloc.reserved_memory[j].large.slot_number; i++)
         {
-            void *beg = ((void **)(g_malloc.reserved_memory.large.pool))[i];
-            void *end = (char *)beg + used;
-            ft_printf("%p - %p : %d bytes\n", beg, end, used);
-            total += used;
+            size_t used = (g_malloc.reserved_memory[j].large.free)[i];
+            if (used)
+            {
+                if (print_header)
+                {
+                    ft_printf("LARGE: %p\n", g_malloc.reserved_memory[j].large);
+                    print_header = false;
+                }
+                void *beg = ((void **)(g_malloc.reserved_memory[j].large.pool))[i];
+                void *end = (char *)beg + used;
+                ft_printf("%p - %p : %d bytes\n", beg, end, used);
+                total += used;
+            }
         }
+        j++;
     }
     return total;
 }
@@ -43,8 +58,12 @@ void show_alloc_mem(void)
 {
     size_t total = 0;
     pthread_mutex_lock(&g_malloc.lock);
-    total += print_pool(&(g_malloc.reserved_memory.small));
-    total += print_pool(&(g_malloc.reserved_memory.medium));
+    size_t i = 0;
+    while (i < g_malloc.reserved_memory_size)
+        total += print_pool(&(g_malloc.reserved_memory[i++].small), "SMALL");
+    i = 0;
+    while (i < g_malloc.reserved_memory_size)
+        total += print_pool(&(g_malloc.reserved_memory[i++].medium), "MEDIUM");
     total += print_large();
     ft_printf("TOTAL: %d bytes\n", total);
     pthread_mutex_unlock(&g_malloc.lock);
