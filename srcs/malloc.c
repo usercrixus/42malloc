@@ -1,4 +1,7 @@
 #include "malloc.h"
+#include "medium.h"
+#include "init.h"
+#include "printer.h"
 
 t_global g_malloc;
 
@@ -18,11 +21,11 @@ void *malloc(size_t size)
 		return NULL;
 	ptr = NULL;
 	if (size <= SMALL_MALLOC)
-		ptr = format_from_pool(size, SMALL);
+		ptr = format_from_pool(size, &(g_malloc.reserved_memory.small));
 	else if (size <= MEDIUM_MALLOC)
-		ptr = format_from_pool(size, MEDIUM);
+		ptr = format_from_pool(size, &(g_malloc.reserved_memory.medium));
 	else
-		ptr = format_from_pool(size, LARGE);
+		ptr = format_from_pool(size, &(g_malloc.reserved_memory.large));
 	if (g_malloc.show_allocations && ptr)
 	{
 		pthread_mutex_lock(&g_malloc.lock);
@@ -36,26 +39,25 @@ void free(void *ptr)
 {
 	if (ptr)
 	{
-		int pool = which_pool(ptr);
-		size_t *free_referencies;
-		if (pool == SMALL)
-			free_referencies = g_malloc.reserved_memory.free_small;
-		else if (pool == MEDIUM)
-			free_referencies = g_malloc.reserved_memory.free_medium;
-		else
-			free_referencies = g_malloc.reserved_memory.free_large;
+		t_pool *pool = which_pool(ptr);
 		pthread_mutex_lock(&g_malloc.lock);
-		size_t free_referencies_id = get_slot_id(ptr);
-		size_t size = free_referencies[free_referencies_id];
-		if (free_referencies[free_referencies_id] == 0)
+		size_t id = get_slot_id(ptr, pool);
+		if (id == SIZE_MAX)
 		{
 			pthread_mutex_unlock(&g_malloc.lock);
 			return;
 		}
-		free_referencies[free_referencies_id] = 0;
+		size_t size = (pool->free)[id];
+		if ((pool->free)[id] == 0)
+		{
+			pthread_mutex_unlock(&g_malloc.lock);
+			return;
+		}
+		(pool->free)[id] = 0;
 		defragment(ptr, size);
-		if (pool == LARGE)
-			munmap(g_malloc.reserved_memory.large[free_referencies_id], size);
+		pool->remaining++;
+		if (pool->pool == g_malloc.reserved_memory.large.pool)
+			munmap(((void **)(g_malloc.reserved_memory.large.pool))[id], size);
 		pthread_mutex_unlock(&g_malloc.lock);
 	}
 }
@@ -71,16 +73,13 @@ void *realloc(void *ptr, size_t newSize)
 	if (!new_ptr)
 		return NULL;
 	pthread_mutex_lock(&g_malloc.lock);
-	size_t oldSize;
-	int pool = which_pool(ptr);
-	if (pool == SMALL)
-		oldSize = g_malloc.reserved_memory.free_small[get_slot_id(ptr)];
-	else if (pool == MEDIUM)
-		oldSize = g_malloc.reserved_memory.free_medium[get_slot_id(ptr)];
-	else
-		oldSize = g_malloc.reserved_memory.free_large[get_slot_id(ptr)];
-	if (oldSize == 0)
+	t_pool *pool = which_pool(ptr);
+	size_t id = get_slot_id(ptr, pool);
+	if (id == SIZE_MAX)
 		return (pthread_mutex_unlock(&g_malloc.lock), NULL);
+	size_t oldSize = pool->free[id];
+	if (oldSize == 0)
+		return (pthread_mutex_unlock(&g_malloc.lock), free(new_ptr), NULL);
 	ft_memcpy(new_ptr, ptr, oldSize < newSize ? oldSize : newSize);
 	pthread_mutex_unlock(&g_malloc.lock);
 	free(ptr);

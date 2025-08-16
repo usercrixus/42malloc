@@ -9,9 +9,6 @@
 #include <stdatomic.h>
 #include "42libft/ft_base/libft.h"
 #include "42libft/ft_printf/ft_printf.h"
-#include "medium.h"
-#include "init.h"
-#include "printer.h"
 
 #define SMALL_MALLOC 1024
 #define MEDIUM_MALLOC 4096
@@ -23,21 +20,20 @@
 #define MEDIUM 1
 #define LARGE 2
 
+typedef struct s_pool
+{
+	void *pool;
+	size_t byte_size;
+	size_t slot_number;
+	size_t *free;
+	size_t remaining;
+} t_pool;
 
 typedef struct s_reserved
 {
-	void *small;
-	void *medium;
-	void **large;
-	size_t small_byte_size;
-	size_t small_slot_size;
-	size_t medium_byte_size;
-	size_t medium_slot_size;
-	size_t large_byte_size;
-	size_t large_slot_size;
-	size_t *free_small;
-	size_t *free_medium;
-	size_t *free_large;
+	t_pool small;
+	t_pool medium;
+	t_pool large;
 } t_reserved;
 
 typedef struct s_global

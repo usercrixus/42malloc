@@ -1,4 +1,5 @@
 #include "init.h"
+#include "printer.h"
 
 size_t page_round_up(size_t sz)
 {
@@ -24,30 +25,18 @@ static void init_page_size()
 	g_malloc.page_size = sysconf(_SC_PAGESIZE);
 }
 
-static void init_pool(size_t *byte_size, size_t *slot_size, void **pool, size_t **free, size_t ALLOC_COUNT, size_t MALLOC)
+void init_pool(t_pool *pool, size_t ALLOC_COUNT, size_t MALLOC)
 {
-	*byte_size = page_round_up(ALLOC_COUNT * MALLOC);
-	*slot_size = *byte_size / MALLOC;
-	*pool = mmap(NULL, *byte_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-	*free = mmap(NULL, *slot_size * sizeof(size_t), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-	if (*pool == MAP_FAILED || *free == MAP_FAILED)
+	pool->byte_size = page_round_up(ALLOC_COUNT * MALLOC);
+	pool->slot_number = pool->byte_size / MALLOC; // MALLOC = pool->byte_size / pool->slot_number;
+	pool->remaining = pool->slot_number;
+	pool->pool = mmap(NULL, pool->byte_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	pool->free = mmap(NULL, pool->slot_number * sizeof(size_t), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	if (pool->pool == MAP_FAILED || pool->free == MAP_FAILED)
 		print_panic("*pool == MAP_FAILED || *free == MAP_FAILED");
 	size_t i = 0;
-	while (i < *slot_size)
-		(*free)[i++] = 0;
-}
-
-static void init_large()
-{
-	g_malloc.reserved_memory.large_byte_size = page_round_up(LARGE_ALLOC_COUNT * LARGE_MALLOC);
-	g_malloc.reserved_memory.large_slot_size = g_malloc.reserved_memory.large_byte_size / LARGE_MALLOC;
-	g_malloc.reserved_memory.large = mmap(NULL, g_malloc.reserved_memory.large_byte_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-	g_malloc.reserved_memory.free_large = mmap(NULL, g_malloc.reserved_memory.large_slot_size * sizeof(size_t), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-	if (g_malloc.reserved_memory.large == MAP_FAILED || g_malloc.reserved_memory.free_large == MAP_FAILED)
-		print_panic("g_malloc.reserved_memory.large == MAP_FAILED || g_malloc.reserved_memory.free_large == MAP_FAILED");
-	size_t i = 0;
-	while (i < g_malloc.reserved_memory.large_slot_size)
-		g_malloc.reserved_memory.free_large[i++] = 0;
+	while (i < pool->slot_number)
+		(pool->free)[i++] = 0;
 }
 
 static void init_thread()
@@ -60,34 +49,22 @@ __attribute__((constructor)) static void init_malloc(void)
 {
 	init_debug();
 	init_page_size();
-	init_pool(&(g_malloc.reserved_memory.small_byte_size), &(g_malloc.reserved_memory.small_slot_size), &(g_malloc.reserved_memory.small), &(g_malloc.reserved_memory.free_small), SMALL_ALLOC_COUNT, SMALL_MALLOC);
-	init_pool(&(g_malloc.reserved_memory.medium_byte_size), &(g_malloc.reserved_memory.medium_slot_size), &(g_malloc.reserved_memory.medium), &(g_malloc.reserved_memory.free_medium), MEDIUM_ALLOC_COUNT, MEDIUM_MALLOC);
-	init_large();
+	init_pool(&(g_malloc.reserved_memory.small), SMALL_ALLOC_COUNT, SMALL_MALLOC);
+	init_pool(&(g_malloc.reserved_memory.medium), MEDIUM_ALLOC_COUNT, MEDIUM_MALLOC);
+	init_pool(&(g_malloc.reserved_memory.large), LARGE_ALLOC_COUNT, LARGE_MALLOC);
 	init_thread();
 }
 
-static void destroy_small()
+void destroy_pool(t_pool *pool)
 {
-	munmap(g_malloc.reserved_memory.small, g_malloc.reserved_memory.small_byte_size);
-	munmap(g_malloc.reserved_memory.free_small, g_malloc.reserved_memory.small_slot_size * sizeof(size_t));
-}
-
-static void destroy_medium()
-{
-	munmap(g_malloc.reserved_memory.medium, g_malloc.reserved_memory.medium_byte_size);
-	munmap(g_malloc.reserved_memory.free_medium, g_malloc.reserved_memory.medium_slot_size * sizeof(size_t));
-}
-
-static void destroy_large()
-{
-	munmap(g_malloc.reserved_memory.large, g_malloc.reserved_memory.large_byte_size);
-	munmap(g_malloc.reserved_memory.free_large, g_malloc.reserved_memory.large_slot_size * sizeof(size_t));
+	munmap(pool->pool, pool->byte_size);
+	munmap(pool->free, pool->slot_number * sizeof(size_t));
 }
 
 __attribute__((destructor)) static void destroy_malloc()
 {
-	destroy_small();
-	destroy_medium();
-	destroy_large();
+	destroy_pool(&(g_malloc.reserved_memory.large));
+	destroy_pool(&(g_malloc.reserved_memory.medium));
+	destroy_pool(&(g_malloc.reserved_memory.small));
 	pthread_mutex_destroy(&g_malloc.lock);
 }
