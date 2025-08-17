@@ -66,11 +66,11 @@ static void extend_pool_type(size_t type)
 		free_pool_rows(old_array, old_capacity);
 }
 
-static void init_pool(t_pool *pool, size_t ALLOC_COUNT, size_t MALLOC, size_t type)
+static void init_pool(t_pool *pool, size_t ALLOC_COUNT, size_t unit_size, size_t type)
 {
 	pool->type = type;
-	pool->byte_size = page_round_up(ALLOC_COUNT * MALLOC);
-	pool->slot_number = (pool->byte_size / MALLOC);
+	pool->byte_size = page_round_up(ALLOC_COUNT * unit_size);
+	pool->slot_number = (pool->byte_size / unit_size);
 
 	pool->pool = mmap(NULL, pool->byte_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	pool->used = mmap(NULL, pool->slot_number * sizeof(size_t), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
