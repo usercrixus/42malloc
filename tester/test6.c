@@ -1,5 +1,3 @@
-#include "srcs/malloc.h"
-#include "srcs/printer.h"
 #include <stdio.h>
 #include <string.h>
 

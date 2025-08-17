@@ -1,4 +1,5 @@
 #include "get_ptr_from_pool.h"
+#include "init.h"
 
 static size_t get_free_slot(t_pool *pool)
 {

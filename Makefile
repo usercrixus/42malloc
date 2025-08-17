@@ -1,7 +1,6 @@
 MAKEFLAGS += --no-print-directory
 
 OBJ_SHARED = \
-	srcs/medium.o \
 	srcs/get_pool_id.o \
 	srcs/get_ptr_from_pool.o \
 	srcs/init.o \
@@ -9,7 +8,6 @@ OBJ_SHARED = \
 	srcs/printer.o \
 
 HDR_SHARED = \
-	srcs/medium.h \
 	srcs/get_pool_id.h \
 	srcs/get_ptr_from_pool.h \
 	srcs/init.h \
@@ -70,8 +68,8 @@ testFinal:
 	gcc tester/test4.c -L. -lft_malloc -o 4
 	gcc tester/test4bis.c -L. -lft_malloc -o 4b
 	gcc tester/test5.c -L. -lft_malloc -o 5
-	gcc  main1.c -L. -lft_malloc -o main1.out
-	gcc  main2.c -L. -lft_malloc -o main2.out
+	gcc tester/test6.c -L. -lft_malloc -o 6
+	gcc tester/test7.c -L. -lft_malloc -o 7
 
 	LD_LIBRARY_PATH=. LD_PRELOAD=./libft_malloc.so /usr/bin/time -v ./0
 	LD_LIBRARY_PATH=. LD_PRELOAD=./libft_malloc.so /usr/bin/time -v ./1
@@ -81,10 +79,10 @@ testFinal:
 	LD_LIBRARY_PATH=. LD_PRELOAD=./libft_malloc.so ./4
 	LD_LIBRARY_PATH=. LD_PRELOAD=./libft_malloc.so ./4b
 	LD_LIBRARY_PATH=. LD_PRELOAD=./libft_malloc.so ./5
-	LD_LIBRARY_PATH=. LD_PRELOAD=./libft_malloc.so MYMALLOC_SHOW_ALLOCATIONS=0 ./main2.out
-	LD_LIBRARY_PATH=. LD_PRELOAD=./libft_malloc.so MYMALLOC_SHOW_ALLOCATIONS=0 ./main1.out
+	LD_LIBRARY_PATH=. LD_PRELOAD=./libft_malloc.so MYMALLOC_SHOW_ALLOCATIONS=1 ./6
+	LD_LIBRARY_PATH=. LD_PRELOAD=./libft_malloc.so MYMALLOC_SHOW_ALLOCATIONS=0 ./7
 
-	rm -f 0 1 2 3 3b 4 4b 5 main2.out main1.out
+	rm -f 0 1 2 3 3b 4 4b 5 6 7
 
 clean:
 	make -C srcs/42libft clean

@@ -36,7 +36,7 @@ void *malloc(size_t size)
 		if (g_malloc.show_allocations && ptr)
 		{
 			pthread_mutex_lock(&g_malloc.lock);
-			ft_printf("[malloc] Allocating %zu bytes\n", size);
+			ft_printf("[malloc] Allocating %d bytes\n", size);
 			pthread_mutex_unlock(&g_malloc.lock);
 		}
 		if (!ptr && i + 1 == g_malloc.pools_size[type])

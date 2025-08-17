@@ -22,7 +22,7 @@
 #define LARGE 2
 #define TYPE {SMALL, MEDIUM, LARGE}
 #define UNIT_SIZE ((size_t[]){1024, 4096, sizeof(void *)})
-#define UNIT_NUMBER ((size_t[]){32, 32, 32})
+#define UNIT_NUMBER ((size_t[]){64, 64, 64})
 #define POOL_NAME ((const char *[]){"SMALL", "MEDIUM", "LARGE"})
 
 typedef struct s_pool
