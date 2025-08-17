@@ -21,6 +21,11 @@
         "large.h": "c",
         "medium.h": "c",
         "stdatomic.h": "c",
-        "stdbool.h": "c"
+        "stdbool.h": "c",
+        "compare": "c",
+        "functional": "c",
+        "tuple": "c",
+        "type_traits": "c",
+        "utility": "c"
     }
 }

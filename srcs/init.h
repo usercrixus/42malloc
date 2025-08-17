@@ -3,6 +3,11 @@
 #include <sys/types.h>
 #include "malloc.h"
 
-size_t page_round_up(size_t sz);
-void init_pool(t_pool *pool, size_t ALLOC_COUNT, size_t MALLOC, size_t type);
-t_pool (*init_pool_list(size_t bytes))[POOL];
+/**
+ * round a size to a page size
+ */
+size_t page_round_up(size_t size);
+/**
+ * init a new row of the selected type (used if no more slot are available for this type)
+ */
+void init_single_pool(size_t type);

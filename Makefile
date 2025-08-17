@@ -1,16 +1,20 @@
 MAKEFLAGS += --no-print-directory
 
 OBJ_SHARED = \
+	srcs/medium.o \
+	srcs/get_pool_id.o \
+	srcs/get_ptr_from_pool.o \
+	srcs/init.o \
 	srcs/malloc.o \
 	srcs/printer.o \
-	srcs/init.o \
-	srcs/medium.o \
 
 HDR_SHARED = \
+	srcs/medium.h \
+	srcs/get_pool_id.h \
+	srcs/get_ptr_from_pool.h \
+	srcs/init.h \
 	srcs/malloc.h \
 	srcs/printer.h \
-	srcs/init.h \
-	srcs/medium.h \
 
 OBJ_MAIN = \
 	main.o \
