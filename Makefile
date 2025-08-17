@@ -70,10 +70,9 @@ clean:
 	rm -f $(OBJ)
 
 fclean: clean
-	rm -f main1.out main2.out
 	rm -f libft_malloc_*.so libft_malloc.so
 
 re: fclean all
 
-.PHONY: clean fclean submodule re test test-crash
+.PHONY: clean fclean submodule re
 

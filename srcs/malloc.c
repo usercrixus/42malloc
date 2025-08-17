@@ -16,18 +16,18 @@ size_t get_pool_type(size_t size)
 	for (size_t i = 0; i < POOL - 1; i++)
 	{
 		if (size <= UNIT_SIZE[i])
-			return i;
+			return (i);
 	}
-	return LARGE;
+	return (LARGE);
 }
 
 void *malloc(size_t size)
 {
 	static _Atomic int alloc_count;
 	if (g_malloc.fail_after >= 0 && alloc_count++ >= g_malloc.fail_after)
-		return NULL;
+		return (NULL);
 	if (size == 0)
-		return NULL;
+		return (NULL);
 	void *ptr = NULL;
 	size_t type = get_pool_type(size);
 	for (size_t i = 0; !ptr && i < g_malloc.pools_size[type]; i++)
@@ -42,7 +42,7 @@ void *malloc(size_t size)
 		if (!ptr && i + 1 == g_malloc.pools_size[type])
 			init_single_pool(type);
 	}
-	return ptr;
+	return (ptr);
 }
 
 void free(void *ptr)
@@ -53,19 +53,14 @@ void free(void *ptr)
 	if (pid.pool == NULL || pid.id == SIZE_MAX)
 		return;
 	pthread_mutex_lock(&g_malloc.lock);
-	size_t sz = pid.pool->used[pid.id];
-	if (sz == 0)
-	{
-		pthread_mutex_unlock(&g_malloc.lock);
-		return;
-	}
-	defragment(ptr, sz);
+	size_t size = pid.pool->used[pid.id];
+	defragment(ptr, size);
 	if (pid.pool->type == LARGE)
 	{
 		void **arr = (void **)pid.pool->pool;
 		if (arr[pid.id])
 		{
-			munmap(arr[pid.id], sz); 
+			munmap(arr[pid.id], size); 
 			arr[pid.id] = NULL;
 		}
 	}
@@ -77,7 +72,7 @@ void free(void *ptr)
 void *realloc(void *ptr, size_t newSize)
 {
 	if (!ptr)
-		return malloc(newSize);
+		return (malloc(newSize));
 	if (newSize == 0)
 		return (free(ptr), NULL);
 	void *new_ptr = malloc(newSize);

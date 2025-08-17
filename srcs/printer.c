@@ -20,7 +20,7 @@ static size_t print_fixed_pool(const t_pool *pool, const char *label)
             total += used;
         }
     }
-    return total;
+    return (total);
 }
 
 static size_t print_large_pool(const t_pool *pool)
@@ -39,7 +39,7 @@ static size_t print_large_pool(const t_pool *pool)
             total += used;
         }
     }
-    return total;
+    return (total);
 }
 
 void show_alloc_mem(void)
