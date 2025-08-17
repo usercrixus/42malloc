@@ -40,7 +40,7 @@ libft_malloc.so: libft_malloc_$(HOSTTYPE).so
 %.o: %.c $(HDR_SHARED)
 	gcc -Wall -Werror -Wextra -fpic -O3 -c $< -o $@
 
-testFinal:
+test:
 	gcc tester/test0.c -L. -lft_malloc -o 0
 	gcc tester/test1.c -L. -lft_malloc -o 1
 	gcc tester/test2.c -L. -lft_malloc -o 2
