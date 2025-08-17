@@ -5,12 +5,9 @@ static size_t pop_free_slot(t_pool *pool)
 {
 	pthread_mutex_lock(&g_malloc.lock);
 	if (pool->free_top == 0)
-	{
-		pthread_mutex_unlock(&g_malloc.lock);
-		return (SIZE_MAX);
-	}
-	size_t id = pool->free_ids[--pool->free_top];
-	pthread_mutex_unlock(&g_malloc.lock);
+		return (pthread_mutex_unlock(&g_malloc.lock), SIZE_MAX);
+	size_t id = pool->free_ids[--(pool->free_top)];
+	pthread_mutex_unlock(&(g_malloc.lock));
 	return (id);
 }
 

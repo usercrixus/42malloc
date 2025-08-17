@@ -71,7 +71,6 @@ static void init_pool(t_pool *pool, size_t ALLOC_COUNT, size_t unit_size, size_t
 	pool->type = type;
 	pool->byte_size = page_round_up(ALLOC_COUNT * unit_size);
 	pool->slot_number = (pool->byte_size / unit_size);
-
 	pool->pool = mmap(NULL, pool->byte_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	pool->used = mmap(NULL, pool->slot_number * sizeof(size_t), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	pool->free_ids = mmap(NULL, pool->slot_number * sizeof(size_t), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -91,6 +90,17 @@ static void init_pool(t_pool *pool, size_t ALLOC_COUNT, size_t unit_size, size_t
 	}
 }
 
+static void init_all_pools()
+{
+	for (size_t type = 0; type < POOL; type++)
+	{
+		g_malloc.pools[type] = NULL;
+		g_malloc.pools_capacity[type] = 0;
+		g_malloc.pools_size[type] = 0;
+		init_single_pool(type);
+	}
+}
+
 void init_single_pool(size_t type)
 {
 	size_t row = g_malloc.pools_size[type];
@@ -107,11 +117,5 @@ __attribute__((constructor)) static void init_malloc(void)
 	init_debug();
 	init_page_size();
 	init_thread();
-	for (size_t type = 0; type < POOL; type++)
-	{
-		g_malloc.pools[type] = NULL;
-		g_malloc.pools_capacity[type] = 0;
-		g_malloc.pools_size[type] = 0;
-		init_single_pool(type);
-	}
+	init_all_pools();
 }

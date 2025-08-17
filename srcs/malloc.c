@@ -11,7 +11,7 @@ static void defragment(void *ptr, size_t size)
 	ft_bzero(ptr, size);
 }
 
-size_t get_pool_type(size_t size)
+static size_t get_pool_type(size_t size)
 {
 	for (size_t i = 0; i < POOL - 1; i++)
 	{

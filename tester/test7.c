@@ -417,7 +417,7 @@ static double median(double *v, int n) {
 }
 
 void performance_benchmark(void) {
-    printf("\n=== PERFORMANCE BENCHMARK ===\n");
+    printf("\n%s=== PERFORMANCE BENCHMARK ===%s\n", BLUE, RESET);
 
     const int pairs      = 100000;   // bump this up for stable numbers
     const int trials     = 5;        // take median
@@ -486,8 +486,7 @@ void performance_benchmark(void) {
     printf("Interleaved %d alloc/free pairs: %.3f s  (%.0f pairs/s, %.0f ops/s)\n",
            pairs, s_inter, pairs_per_sec_inter, ops_per_sec_inter);
 
-    // If you have a test_result helper:
-    // test_result("Performance benchmark completed", 1);
+    test_result("Performance benchmark completed", 1);
 }
 
 void print_summary() {

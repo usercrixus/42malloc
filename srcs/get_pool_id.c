@@ -34,18 +34,9 @@ t_pool_id get_pool_id(const char *ptr)
 		for (size_t i = 0; i < g_malloc.pools_size[type]; i++)
 		{
 			t_pool *pool = &(g_malloc.pools[type][i]);
-			if (type == LARGE)
-			{
-				pool_id.id = get_large_pool_id(ptr, pool);
-				if (pool_id.id != SIZE_MAX)
-					return (pool_id.pool = pool, pool_id);
-			}
-			else
-			{
-				pool_id.id = get_normal_pool_id(ptr, pool);
-				if (pool_id.id != SIZE_MAX)
-					return (pool_id.pool = pool, pool_id);
-			}
+			pool_id.id = type == LARGE ? get_large_pool_id(ptr, pool) : get_normal_pool_id(ptr, pool);
+			if (pool_id.id != SIZE_MAX)
+				return (pool_id.pool = pool, pool_id);
 		}
 	}
 	pool_id.pool = NULL;
