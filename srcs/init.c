@@ -55,7 +55,7 @@ static void free_pool_rows(t_pool *arr, size_t rows)
 static void extend_pool_type(size_t type)
 {
 	size_t old_capacity = g_malloc.pools_capacity[type];
-	size_t new_capacity = old_capacity ? old_capacity * 2 : 1;
+	size_t new_capacity = old_capacity ? old_capacity * 2 : page_round_up(1 * sizeof(t_pool)) / sizeof(t_pool);
 	t_pool *old_array = g_malloc.pools[type];
 	t_pool *new_array = alloc_pool_rows(new_capacity);
 	if (old_array && old_capacity)
@@ -107,7 +107,6 @@ __attribute__((constructor)) static void init_malloc(void)
 	init_debug();
 	init_page_size();
 	init_thread();
-	// per-type arrays: start with cap=1 and init row 0
 	for (size_t type = 0; type < POOL; type++)
 	{
 		g_malloc.pools[type] = NULL;
