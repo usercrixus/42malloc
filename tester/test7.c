@@ -7,7 +7,7 @@
 #include <errno.h>
 #include <stdint.h>
 #include <limits.h>
-
+#include <stdlib.h>
 // Colors for output
 #define GREEN "\033[0;32m"
 #define RED "\033[0;31m"
@@ -402,46 +402,92 @@ void test_memory_patterns() {
     test_result("Power-of-2 size allocations", success_count > 18);
 }
 
-void performance_benchmark() {
-    printf("\n%s=== PERFORMANCE BENCHMARK ===%s\n", BLUE, RESET);
+static double sec_since(struct timespec a, struct timespec b) {
+    return (b.tv_sec - a.tv_sec) + (b.tv_nsec - a.tv_nsec) / 1e9;
+}
 
-    const int num_ops = 1000;
-    struct timeval start, end;
-
-    // Benchmark 1: Sequential allocations
-    gettimeofday(&start, NULL);
-    void **ptrs = malloc(num_ops * sizeof(void*));
-    for (int i = 0; i < num_ops; i++) {
-        ptrs[i] = malloc(64);
+static double median(double *v, int n) {
+    // insertion sort (n small)
+    for (int i = 1; i < n; i++) {
+        double x = v[i]; int j = i - 1;
+        while (j >= 0 && v[j] > x) { v[j+1] = v[j]; j--; }
+        v[j+1] = x;
     }
-    for (int i = 0; i < num_ops; i++) {
-        if (ptrs[i]) free(ptrs[i]);
+    return (n % 2) ? v[n/2] : 0.5*(v[n/2 - 1] + v[n/2]);
+}
+
+void performance_benchmark(void) {
+    printf("\n=== PERFORMANCE BENCHMARK ===\n");
+
+    const int pairs      = 100000;   // bump this up for stable numbers
+    const int trials     = 5;        // take median
+    double times_seq[trials], times_rand[trials], times_inter[trials];
+
+    srand(12345); // deterministic
+
+    // --- Trial loop ---
+    for (int t = 0; t < trials; t++) {
+        struct timespec a,b;
+
+        // 1) Sequential fixed-size: alloc-all then free-all
+        void **ptrs = (void **)malloc((size_t)pairs * sizeof(void *));
+        clock_gettime(CLOCK_MONOTONIC, &a);
+        for (int i = 0; i < pairs; i++) ptrs[i] = malloc(64);
+        for (int i = 0; i < pairs; i++) free(ptrs[i]);
+        clock_gettime(CLOCK_MONOTONIC, &b);
+        times_seq[t] = sec_since(a,b);
+        free(ptrs);
+
+        // 2) Random sizes: alloc-all then free-all
+        ptrs = (void **)malloc((size_t)pairs * sizeof(void *));
+        clock_gettime(CLOCK_MONOTONIC, &a);
+        for (int i = 0; i < pairs; i++) {
+            size_t sz = (size_t)(rand() % 1024 + 1);   // 1..1024
+            ptrs[i] = malloc(sz);
+        }
+        for (int i = 0; i < pairs; i++) free(ptrs[i]);
+        clock_gettime(CLOCK_MONOTONIC, &b);
+        times_rand[t] = sec_since(a,b);
+        free(ptrs);
+
+        // 3) Interleaved churn: alloc, maybe free previous, repeat
+        clock_gettime(CLOCK_MONOTONIC, &a);
+        void *last = NULL;
+        for (int i = 0; i < pairs; i++) {
+            size_t sz = (size_t)(rand() % 2048 + 1);   // wider spread
+            void *p = malloc(sz);
+            if (last) free(last);
+            last = p;
+        }
+        if (last) free(last);
+        clock_gettime(CLOCK_MONOTONIC, &b);
+        times_inter[t] = sec_since(a,b);
     }
-    free(ptrs);
-    gettimeofday(&end, NULL);
 
-    double sequential_time = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
-    printf("Sequential %d alloc/free pairs: %.3f seconds (%.0f ops/sec)\n", 
-           num_ops, sequential_time, num_ops / sequential_time);
+    double s_seq   = median(times_seq,  trials);
+    double s_rand  = median(times_rand, trials);
+    double s_inter = median(times_inter,trials);
 
-    // Benchmark 2: Random size allocations
-    gettimeofday(&start, NULL);
-    ptrs = malloc(num_ops * sizeof(void*));
-    for (int i = 0; i < num_ops; i++) {
-        size_t size = (rand() % 1000) + 1;
-        ptrs[i] = malloc(size);
-    }
-    for (int i = 0; i < num_ops; i++) {
-        if (ptrs[i]) free(ptrs[i]);
-    }
-    free(ptrs);
-    gettimeofday(&end, NULL);
+    double pairs_per_sec_seq   = pairs / s_seq;
+    double ops_per_sec_seq     = (pairs * 2.0) / s_seq;
 
-    double random_time = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
-    printf("Random size %d alloc/free pairs: %.3f seconds (%.0f ops/sec)\n", 
-           num_ops, random_time, num_ops / random_time);
+    double pairs_per_sec_rand  = pairs / s_rand;
+    double ops_per_sec_rand    = (pairs * 2.0) / s_rand;
 
-    test_result("Performance benchmark completed", 1);
+    double pairs_per_sec_inter = pairs / s_inter;
+    double ops_per_sec_inter   = (pairs * 2.0) / s_inter;
+
+    printf("Sequential %d alloc/free pairs: %.3f s  (%.0f pairs/s, %.0f ops/s)\n",
+           pairs, s_seq, pairs_per_sec_seq, ops_per_sec_seq);
+
+    printf("Random size %d alloc/free pairs: %.3f s  (%.0f pairs/s, %.0f ops/s)\n",
+           pairs, s_rand, pairs_per_sec_rand, ops_per_sec_rand);
+
+    printf("Interleaved %d alloc/free pairs: %.3f s  (%.0f pairs/s, %.0f ops/s)\n",
+           pairs, s_inter, pairs_per_sec_inter, ops_per_sec_inter);
+
+    // If you have a test_result helper:
+    // test_result("Performance benchmark completed", 1);
 }
 
 void print_summary() {

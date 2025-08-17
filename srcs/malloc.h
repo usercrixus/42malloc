@@ -22,7 +22,7 @@
 #define LARGE 2
 #define TYPE {SMALL, MEDIUM, LARGE}
 #define UNIT_SIZE ((size_t[]){1024, 4096, sizeof(void *)})
-#define UNIT_NUMBER ((size_t[]){64, 64, 64})
+#define UNIT_NUMBER ((size_t[]){1024, 1024, 64})
 #define POOL_NAME ((const char *[]){"SMALL", "MEDIUM", "LARGE"})
 
 typedef struct s_pool
@@ -30,7 +30,7 @@ typedef struct s_pool
 	void *pool;			// a pool of pointer
 	size_t byte_size;	// the total size of the pool
 	size_t slot_number; // the number of pointer available in the pool
-	size_t *free;		// list of free point (0 for free, else, size asked by the user)
+	size_t *free;		// list of free pointer (0 for free, else, size asked by the user)
 	size_t type;		// the type of the pool (SMALL, MEDIUM, LARGE...)
 } t_pool;
 

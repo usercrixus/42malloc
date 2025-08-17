@@ -14,12 +14,6 @@ HDR_SHARED = \
 	srcs/malloc.h \
 	srcs/printer.h \
 
-OBJ_MAIN = \
-	main.o \
-
-OBJ_MAIN2 = \
-	main2.o \
-
 ifeq ($(HOSTTYPE),)
 HOSTTYPE := $(shell uname -m)_$(shell uname -s)
 endif
@@ -43,21 +37,8 @@ libft_malloc_$(HOSTTYPE).so: $(OBJ_SHARED) libft
 libft_malloc.so: libft_malloc_$(HOSTTYPE).so
 	ln -sf libft_malloc_$(HOSTTYPE).so libft_malloc.so
 
-main1.out: libft $(OBJ_MAIN)
-	gcc -Wall -Werror -Wextra $(OBJ_MAIN) -L. -lft_malloc -o $@
-
-main2.out: libft $(OBJ_MAIN2)
-	gcc -Wall -Werror -Wextra $(OBJ_MAIN2) -L. -lft_malloc -o $@
-
 %.o: %.c $(HDR_SHARED)
-	gcc -Wall -Werror -Wextra -fpic -c $< -o $@
-
-test-crash:
-	LD_LIBRARY_PATH=. LD_PRELOAD=./libft_malloc.so MYMALLOC_SHOW_ALLOCATIONS=1 MYMALLOC_FAIL_AFTER=1 ./main1.out
-
-test1: all main1.out
-	LD_LIBRARY_PATH=. LD_PRELOAD=./libft_malloc.so MYMALLOC_SHOW_ALLOCATIONS=0 ./main1.out
-
+	gcc -Wall -Werror -Wextra -fpic -O3 -c $< -o $@
 
 testFinal:
 	gcc tester/test0.c -L. -lft_malloc -o 0
