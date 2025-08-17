@@ -68,16 +68,27 @@ static void extend_pool_type(size_t type)
 
 static void init_pool(t_pool *pool, size_t ALLOC_COUNT, size_t MALLOC, size_t type)
 {
-	pool->byte_size = page_round_up(ALLOC_COUNT * MALLOC);
-	pool->slot_number = pool->byte_size / MALLOC; // MALLOC = pool->byte_size / pool->slot_number;
-	pool->pool = mmap(NULL, pool->byte_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-	pool->free = mmap(NULL, pool->slot_number * sizeof(size_t), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	pool->type = type;
-	if (pool->pool == MAP_FAILED || pool->free == MAP_FAILED)
-		print_panic("*pool == MAP_FAILED || *free == MAP_FAILED");
-	size_t i = 0;
-	while (i < pool->slot_number)
-		(pool->free)[i++] = 0;
+	pool->byte_size = page_round_up(ALLOC_COUNT * MALLOC);
+	pool->slot_number = (pool->byte_size / MALLOC);
+
+	pool->pool = mmap(NULL, pool->byte_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	pool->used = mmap(NULL, pool->slot_number * sizeof(size_t), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	pool->free_ids = mmap(NULL, pool->slot_number * sizeof(size_t), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	if (pool->pool == MAP_FAILED || pool->used == MAP_FAILED || pool->free_ids == MAP_FAILED)
+		print_panic("init_pool: mmap failed");
+	for (size_t i = 0; i < pool->slot_number; i++)
+	{
+		pool->used[i] = 0;
+		pool->free_ids[i] = pool->slot_number - 1 - i;
+	}
+	pool->free_top = pool->slot_number;
+	if (pool->type == LARGE)
+	{
+		void **arr = (void **)pool->pool;
+		for (size_t i = 0; i < pool->slot_number; i++)
+			arr[i] = NULL;
+	}
 }
 
 void init_single_pool(size_t type)

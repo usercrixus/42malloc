@@ -11,7 +11,7 @@ static size_t print_fixed_pool(const t_pool *pool, const char *label)
     ft_printf("%s: %p\n", label, base_pool);
     for (size_t i = 0; i < pool->slot_number; i++)
     {
-        size_t used = pool->free[i];
+        size_t used = pool->used[i];
         if (used)
         {
             const void *beg = base_pool + i * slot_size;
@@ -30,7 +30,7 @@ static size_t print_large_pool(const t_pool *pool)
     ft_printf("LARGE: %p\n", pool->pool);
     for (size_t i = 0; i < pool->slot_number; i++)
     {
-        size_t used = pool->free[i];
+        size_t used = pool->used[i];
         if (used)
         {
             const void *beg = base_pool[i];

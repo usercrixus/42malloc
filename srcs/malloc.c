@@ -47,19 +47,31 @@ void *malloc(size_t size)
 
 void free(void *ptr)
 {
-	if (ptr)
+	if (!ptr)
+		return;
+	t_pool_id pid = get_pool_id(ptr);
+	if (pid.pool == NULL || pid.id == SIZE_MAX)
+		return;
+	pthread_mutex_lock(&g_malloc.lock);
+	size_t sz = pid.pool->used[pid.id];
+	if (sz == 0)
 	{
-		t_pool_id pid = get_pool_id(ptr);
-		if (pid.pool == NULL || pid.id == SIZE_MAX)
-			return;
-		pthread_mutex_lock(&g_malloc.lock);
-		size_t size = (pid.pool->free)[pid.id];
-		(pid.pool->free)[pid.id] = 0;
-		defragment(ptr, size);
-		if (pid.pool->type == LARGE)
-			munmap(((void **)(pid.pool->pool))[pid.id], size);
 		pthread_mutex_unlock(&g_malloc.lock);
+		return;
 	}
+	defragment(ptr, sz);
+	if (pid.pool->type == LARGE)
+	{
+		void **arr = (void **)pid.pool->pool;
+		if (arr[pid.id])
+		{
+			munmap(arr[pid.id], sz); 
+			arr[pid.id] = NULL;
+		}
+	}
+	pid.pool->used[pid.id] = 0;
+	pid.pool->free_ids[pid.pool->free_top++] = pid.id;
+	pthread_mutex_unlock(&g_malloc.lock);
 }
 
 void *realloc(void *ptr, size_t newSize)
@@ -75,7 +87,7 @@ void *realloc(void *ptr, size_t newSize)
 	t_pool_id pid = get_pool_id(ptr);
 	if (pid.pool == NULL || pid.id == SIZE_MAX)
 		return (pthread_mutex_unlock(&g_malloc.lock), free(new_ptr), NULL);
-	size_t oldSize = pid.pool->free[pid.id];
+	size_t oldSize = pid.pool->used[pid.id];
 	if (oldSize == 0)
 		return (pthread_mutex_unlock(&g_malloc.lock), free(new_ptr), NULL);
 	pthread_mutex_unlock(&g_malloc.lock);

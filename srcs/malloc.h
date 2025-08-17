@@ -30,8 +30,10 @@ typedef struct s_pool
 	void *pool;			// a pool of pointer
 	size_t byte_size;	// the total size of the pool
 	size_t slot_number; // the number of pointer available in the pool
-	size_t *free;		// list of free pointer (0 for free, else, size asked by the user)
 	size_t type;		// the type of the pool (SMALL, MEDIUM, LARGE...)
+	size_t *used;		// list of used pointer (0 for free, else, size asked by the user)
+	size_t *free_ids;	// stack of free slot indices (LIFO)
+	size_t free_top;	// count of items on the stack (index of next push)
 } t_pool;
 
 typedef struct s_global
