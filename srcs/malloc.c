@@ -6,11 +6,6 @@
 
 t_global g_malloc;
 
-static void defragment(void *ptr, size_t size)
-{
-	ft_bzero(ptr, size);
-}
-
 static size_t get_pool_type(size_t size)
 {
 	for (size_t i = 0; i < POOL - 1; i++)
@@ -52,7 +47,6 @@ void free(void *ptr)
 		return;
 	pthread_mutex_lock(&g_malloc.lock);
 	size_t size = pid.pool->used[pid.id];
-	defragment(ptr, size);
 	if (pid.pool->type == LARGE)
 	{
 		void **arr = (void **)pid.pool->pool;
