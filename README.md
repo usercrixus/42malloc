@@ -10,7 +10,6 @@ It replaces the system allocator and manages memory using multiple pools dependi
 - **Large allocations**: handled separately using `mmap` (page-rounded).  
 - **Free-list stack**: fast O(1) slot allocation via `free_ids` stack.  
 - **Thread-safety**: global lock for correctness, with room for per-pool/per-thread optimizations.  
-- **Defragmentation**: freed memory is zeroed before reuse.  
 
 This is a learning project — it focuses on clarity and measurable performance, not full production features (no guard pages, no double-free protection, no tcache).
 
