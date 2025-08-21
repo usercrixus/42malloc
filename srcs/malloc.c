@@ -33,14 +33,12 @@ void *malloc(size_t size)
 	for (size_t i = 0; !ptr && i < g_malloc.pools_size[type]; i++)
 	{
 		ptr = get_ptr_from_pool(size, &g_malloc.pools[type][i]);
+		pthread_mutex_lock(&g_malloc.lock);
 		if (g_malloc.show_allocations && ptr)
-		{
-			pthread_mutex_lock(&g_malloc.lock);
 			ft_printf("[malloc] Allocating %d bytes\n", size);
-			pthread_mutex_unlock(&g_malloc.lock);
-		}
 		if (!ptr && i + 1 == g_malloc.pools_size[type])
 			init_single_pool(type);
+		pthread_mutex_unlock(&g_malloc.lock);
 	}
 	return (ptr);
 }
@@ -60,7 +58,7 @@ void free(void *ptr)
 		void **arr = (void **)pid.pool->pool;
 		if (arr[pid.id])
 		{
-			munmap(arr[pid.id], size); 
+			munmap(arr[pid.id], size);
 			arr[pid.id] = NULL;
 		}
 	}
