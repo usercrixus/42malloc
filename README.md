@@ -32,11 +32,17 @@ A comprehensive suite was run against this allocator:
 
 | Test (100k pairs)        | Time   | Throughput (pairs/s) | Ops/s (alloc+free) |
 |--------------------------|--------|----------------------|--------------------|
-| Sequential (fixed size)  | 0.082s | 1.22M                | 2.44M              |
-| Random size              | 0.175s | 0.57M                | 1.14M              |
-| Interleaved alloc/free   | 0.224s | 0.45M                | 0.89M              |
+| Sequential (fixed size)  | 0.103s | 0.97M                | 1.94M              |
+| Random size              | 0.102s | 0.98M                | 1.96M              |
+| Interleaved alloc/free   | 0.016s | 6.22M                | 12.4M              |
 
 These numbers are **within the same order of magnitude as system allocators** on a single thread.
+
+| Test (100k pairs)        | Time   | Throughput (pairs/s) | Ops/s (alloc+free) |
+|--------------------------|--------|----------------------|--------------------|
+| Sequential (fixed size)  | 0.008s | 12.9M                | 25.8M              |
+| Random size              | 0.039s | 2.54M                | 5.09M              |
+| Interleaved alloc/free   | 0.006s | 16.4M                | 32.9M              |
 
 ---
 
@@ -44,8 +50,7 @@ These numbers are **within the same order of magnitude as system allocators** on
 
 This allocator is functional but incomplete compared to production-grade mallocs:
 
-- ❌ **No advanced defragmentation** (freed holes are reused but not compacted).  
+- ❌ **No advanced defragmentation** (freed holes are compacted but not munmaped).
 - ❌ **No per-thread caches (tcache)** → global lock may cause contention under heavy multithreading.  
 - ❌ **No guard pages / overrun detection** → buffer overflows won’t be caught.  
-- ❌ **No coalescing of adjacent free blocks** → fragmentation may grow with long runs.  
 - ❌ **No `calloc` or `posix_memalign` implementations** yet.  

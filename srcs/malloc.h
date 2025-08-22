@@ -49,8 +49,9 @@ typedef struct s_global
 
 typedef struct s_pool_id
 {
-	size_t id;
-	t_pool *pool;
+	size_t id;		  // id (rank) of the pointer in the pool (t_pool.pool)
+	t_pool *pool;	  // the t_pool the pointer is in
+	size_t parent_id; // the parent t_pool list offset (see t_pool *pools[POOL])
 } t_pool_id;
 
 extern t_global g_malloc;

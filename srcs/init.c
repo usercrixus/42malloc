@@ -90,6 +90,19 @@ static void init_pool(t_pool *pool, size_t ALLOC_COUNT, size_t unit_size, size_t
 	}
 }
 
+void destroy_pool(t_pool *pool)
+{
+	munmap(pool->pool, pool->byte_size);
+	munmap(pool->used, pool->slot_number * sizeof(size_t));
+	munmap(pool->free_ids, pool->slot_number * sizeof(size_t));
+	pool->pool = NULL;
+	pool->used = NULL;
+	pool->free_ids = NULL;
+	pool->byte_size = 0;
+	pool->slot_number = 0;
+	pool->free_top = 0;
+}
+
 static void init_all_pools()
 {
 	for (size_t type = 0; type < POOL; type++)

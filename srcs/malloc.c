@@ -38,6 +38,22 @@ void *malloc(size_t size)
 	return (ptr);
 }
 
+static void defragment(t_pool_id *pid)
+{
+	if (pid->pool->free_top == pid->pool->slot_number)
+	{
+		if (pid->parent_id != g_malloc.pools_size[pid->pool->type] - 1)
+		{
+			t_pool tmp = g_malloc.pools[pid->pool->type][pid->parent_id];
+			g_malloc.pools[pid->pool->type][pid->parent_id] = g_malloc.pools[pid->pool->type][g_malloc.pools_size[pid->pool->type] - 1];
+			g_malloc.pools[pid->pool->type][g_malloc.pools_size[pid->pool->type] - 1] = tmp;
+			// if we want to destroy (munmap) the empty pools... but we should have a strategy, as it is it an hard bottleneck
+			// destroy_pool(pid->pool);
+			// g_malloc.pools_size[pid->pool->type]--;
+		}
+	}
+}
+
 void free(void *ptr)
 {
 	if (!ptr)
@@ -58,6 +74,7 @@ void free(void *ptr)
 	}
 	pid.pool->used[pid.id] = 0;
 	pid.pool->free_ids[pid.pool->free_top++] = pid.id;
+	defragment(&pid);
 	pthread_mutex_unlock(&g_malloc.lock);
 }
 
