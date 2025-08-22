@@ -47,7 +47,8 @@ static void defragment(t_pool_id *pid)
 			t_pool tmp = g_malloc.pools[pid->pool->type][pid->parent_id];
 			g_malloc.pools[pid->pool->type][pid->parent_id] = g_malloc.pools[pid->pool->type][g_malloc.pools_size[pid->pool->type] - 1];
 			g_malloc.pools[pid->pool->type][g_malloc.pools_size[pid->pool->type] - 1] = tmp;
-			// if we want to destroy (munmap) the empty pools... but we should have a strategy, as it is it an hard bottleneck
+			// if we want to destroy (munmap) the empty pools... but we should have a strategy, as it is it an hard bottleneck.
+			// my point... we should not delete them, if the program ever reach that point, it has lot of chance to reach that point again.
 			// destroy_pool(pid->pool);
 			// g_malloc.pools_size[pid->pool->type]--;
 		}
@@ -78,24 +79,53 @@ void free(void *ptr)
 	pthread_mutex_unlock(&g_malloc.lock);
 }
 
+static bool shrink(size_t newSize, size_t oldSize, size_t type, t_pool_id *pid)
+{
+	if (newSize <= oldSize)
+	{
+		if (type == LARGE)
+		{
+			void *base = ((void **)pid->pool->pool)[pid->id];
+			size_t old_pg = page_round_up(oldSize);
+			size_t new_pg = page_round_up(newSize);
+			if (new_pg < old_pg)
+				munmap((char *)base + new_pg, old_pg - new_pg);
+		}
+		pid->pool->used[pid->id] = newSize;
+		return (true);
+	}
+	return (false);
+}
+
+static bool extend(size_t type, size_t newSize, t_pool_id *pid)
+{
+	if (type != LARGE && newSize <= UNIT_SIZE[type])
+	{
+		pid->pool->used[pid->id] = newSize;
+		return true;
+	}
+	return false;
+}
+
 void *realloc(void *ptr, size_t newSize)
 {
 	if (!ptr)
-		return (malloc(newSize));
+		return malloc(newSize);
 	if (newSize == 0)
 		return (free(ptr), NULL);
-	void *new_ptr = malloc(newSize);
-	if (!new_ptr)
-		return (NULL);
 	pthread_mutex_lock(&g_malloc.lock);
 	t_pool_id pid = get_pool_id(ptr);
 	if (pid.pool == NULL || pid.id == SIZE_MAX)
-		return (pthread_mutex_unlock(&g_malloc.lock), free(new_ptr), NULL);
+		return (pthread_mutex_unlock(&g_malloc.lock), NULL);
 	size_t oldSize = pid.pool->used[pid.id];
-	if (oldSize == 0)
-		return (pthread_mutex_unlock(&g_malloc.lock), free(new_ptr), NULL);
+	size_t type = pid.pool->type;
+	if (shrink(newSize, oldSize, type, &pid) || extend(type, newSize, &pid))
+		return (pthread_mutex_unlock(&g_malloc.lock), ptr);
 	pthread_mutex_unlock(&g_malloc.lock);
+	void *new_ptr = malloc(newSize);
+	if (!new_ptr)
+		return NULL;
 	ft_memcpy(new_ptr, ptr, oldSize < newSize ? oldSize : newSize);
 	free(ptr);
-	return (new_ptr);
+	return new_ptr;
 }

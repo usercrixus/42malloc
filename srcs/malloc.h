@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <sys/mman.h>
+#define _GNU_SOURCE
 #include <sys/types.h>
 #include <stdint.h>
 #include <unistd.h>
