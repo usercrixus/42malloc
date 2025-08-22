@@ -41,29 +41,10 @@ libft_malloc.so: libft_malloc_$(HOSTTYPE).so
 	gcc -Wall -Werror -Wextra -fpic -O3 -c $< -o $@
 
 test:
-	gcc tester/test0.c -L. -lft_malloc -o 0
-	gcc tester/test1.c -L. -lft_malloc -o 1
-	gcc tester/test2.c -L. -lft_malloc -o 2
-	gcc tester/test3.c -L. -lft_malloc -o 3
-	gcc tester/test3bis.c -L. -lft_malloc -o 3b
-	gcc tester/test4.c -L. -lft_malloc -o 4
-	gcc tester/test4bis.c -L. -lft_malloc -o 4b
-	gcc tester/test5.c -L. -lft_malloc -o 5
-	gcc tester/test6.c -L. -lft_malloc -o 6
-	gcc tester/test7.c -L. -lft_malloc -o 7
+	gcc tester/test.c -L. -lft_malloc -o tester.out
+	LD_LIBRARY_PATH=. LD_PRELOAD=./libft_malloc.so MYMALLOC_SHOW_ALLOCATIONS=0 ./tester.out
 
-	LD_LIBRARY_PATH=. LD_PRELOAD=./libft_malloc.so /usr/bin/time -v ./0
-	LD_LIBRARY_PATH=. LD_PRELOAD=./libft_malloc.so /usr/bin/time -v ./1
-	LD_LIBRARY_PATH=. LD_PRELOAD=./libft_malloc.so /usr/bin/time -v ./2
-	LD_LIBRARY_PATH=. LD_PRELOAD=./libft_malloc.so ./3
-	LD_LIBRARY_PATH=. LD_PRELOAD=./libft_malloc.so ./3b
-	LD_LIBRARY_PATH=. LD_PRELOAD=./libft_malloc.so ./4
-	LD_LIBRARY_PATH=. LD_PRELOAD=./libft_malloc.so ./4b
-	LD_LIBRARY_PATH=. LD_PRELOAD=./libft_malloc.so ./5
-	LD_LIBRARY_PATH=. LD_PRELOAD=./libft_malloc.so MYMALLOC_SHOW_ALLOCATIONS=1 ./6
-	LD_LIBRARY_PATH=. LD_PRELOAD=./libft_malloc.so MYMALLOC_SHOW_ALLOCATIONS=0 ./7
-
-	rm -f 0 1 2 3 3b 4 4b 5 6 7
+	rm tester.out
 
 clean:
 	make -C srcs/42libft clean
